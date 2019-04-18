@@ -1,0 +1,5 @@
+# FIXED
+
+touch.obj: /home/jordikitto/ti/tivaware_c_series_2_1_4_178/examples/boards/ek-tm4c1294xl-boostxl-kentec-s1/drivers/touch.c
+
+/home/jordikitto/ti/tivaware_c_series_2_1_4_178/examples/boards/ek-tm4c1294xl-boostxl-kentec-s1/drivers/touch.c: 

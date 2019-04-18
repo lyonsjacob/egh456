@@ -10,8 +10,11 @@ GEN_CMDS__FLAG := -l"configPkg/linker.cmd"
 ORDERED_OBJS += \
 "./EK_TM4C1294XL.obj" \
 "./empty_min.obj" \
+"./drivers/Kentec320x240x16_ssd2119_spi.obj" \
+"./drivers/touch.obj" \
 "../EK_TM4C1294XL.cmd" \
 $(GEN_CMDS__FLAG) \
+-l"/home/jordikitto/ti/tivaware_c_series_2_1_4_178/grlib/ccs/Debug/grlib.lib" \
 -l"/home/jordikitto/ti/tirtos_tivac_2_16_00_08/products/TivaWare_C_Series-2.1.1.71b/grlib/ccs/Debug/grlib.lib" \
 -l"/home/jordikitto/ti/tirtos_tivac_2_16_00_08/products/TivaWare_C_Series-2.1.1.71b/usblib/ccs/Debug/usblib.lib" \
 -l"/home/jordikitto/ti/tirtos_tivac_2_16_00_08/products/TivaWare_C_Series-2.1.1.71b/driverlib/ccs/Debug/driverlib.lib" \
@@ -25,7 +28,9 @@ RMDIR := rm -rf
 # All of the sources participating in the build are defined here
 -include sources.mk
 -include subdir_vars.mk
+-include drivers/subdir_vars.mk
 -include subdir_rules.mk
+-include drivers/subdir_rules.mk
 -include objects.mk
 
 ifneq ($(MAKECMDGOALS),clean)
@@ -142,7 +147,7 @@ all: $(OBJS) $(CMD_SRCS) $(GEN_CMDS)
 empty_min_EK_TM4C1294XL_TI.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS)
 	@echo 'Building target: "$@"'
 	@echo 'Invoking: ARM Linker'
-	"/home/jordikitto/ti/ccs901/ccs/tools/compiler/ti-cgt-arm_18.12.1.LTS/bin/armcl" -mv7M4 --code_state=16 --float_support=FPv4SPD16 -me --define=ccs="ccs" --define=PART_TM4C1294NCPDT --define=ccs --define=TIVAWARE -g --gcc --diag_warning=225 --diag_warning=255 --diag_wrap=off --display_error_number --gen_func_subsections=on --abi=eabi -z -m"empty_min_EK_TM4C1294XL_TI.map" --heap_size=0 --stack_size=512 -i"/home/jordikitto/ti/ccs901/ccs/tools/compiler/ti-cgt-arm_18.12.1.LTS/lib" -i"/home/jordikitto/ti/ccs901/ccs/tools/compiler/ti-cgt-arm_18.12.1.LTS/include" --reread_libs --diag_wrap=off --display_error_number --warn_sections --xml_link_info="empty_min_EK_TM4C1294XL_TI_linkInfo.xml" --rom_model -o "empty_min_EK_TM4C1294XL_TI.out" $(ORDERED_OBJS)
+	"/home/jordikitto/ti/ccs901/ccs/tools/compiler/ti-cgt-arm_18.12.1.LTS/bin/armcl" -mv7M4 --code_state=16 --float_support=FPv4SPD16 -me --define=TARGET_IS_TM4C129_RA0 --define=ccs="ccs" --define=PART_TM4C1294NCPDT --define=ccs --define=TIVAWARE -g --gcc --diag_warning=225 --diag_warning=255 --diag_wrap=off --display_error_number --gen_func_subsections=on --abi=eabi -z -m"empty_min_EK_TM4C1294XL_TI.map" --heap_size=0 --stack_size=1024 -i"/home/jordikitto/ti/ccs901/ccs/tools/compiler/ti-cgt-arm_18.12.1.LTS/lib" -i"/home/jordikitto/ti/ccs901/ccs/tools/compiler/ti-cgt-arm_18.12.1.LTS/include" --reread_libs --diag_wrap=off --display_error_number --warn_sections --xml_link_info="empty_min_EK_TM4C1294XL_TI_linkInfo.xml" --rom_model -o "empty_min_EK_TM4C1294XL_TI.out" $(ORDERED_OBJS)
 	@echo 'Finished building target: "$@"'
 	@echo ' '
 
@@ -156,8 +161,8 @@ empty_min_EK_TM4C1294XL_TI.hex: $(EXE_OUTPUTS)
 # Other Targets
 clean:
 	-$(RM) $(BIN_OUTPUTS__QUOTED)$(GEN_FILES__QUOTED)$(EXE_OUTPUTS__QUOTED)
-	-$(RM) "EK_TM4C1294XL.obj" "empty_min.obj" 
-	-$(RM) "EK_TM4C1294XL.d" "empty_min.d" 
+	-$(RM) "EK_TM4C1294XL.obj" "empty_min.obj" "drivers/Kentec320x240x16_ssd2119_spi.obj" "drivers/touch.obj" 
+	-$(RM) "EK_TM4C1294XL.d" "empty_min.d" "drivers/Kentec320x240x16_ssd2119_spi.d" "drivers/touch.d" 
 	-$(RMDIR) $(GEN_MISC_DIRS__QUOTED)
 	-@echo 'Finished clean'
 	-@echo ' '
