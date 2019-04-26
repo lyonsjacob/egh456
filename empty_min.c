@@ -53,11 +53,17 @@ uint32_t g_ui32SysClock;
 Task_Struct task0Struct;
 Char task0Stack[TASKSTACKSIZE];
 
+Task_Struct taskgrStruct;
+Char taskgrStack[TASKSTACKSIZE];
+
 Hwi_Handle myHwi;
 Swi_Handle mySwi;
 
-char buffer[50] = " ";
+#define buffer_size 50
+char buffer[buffer_size] = " ";
 int buffer_index = 0;
+
+int print_screen = 0;
 
 /*
  *  ======== heartBeatFxn ========
@@ -69,6 +75,74 @@ Void heartBeatFxn(UArg arg0, UArg arg1)
     while (1) {
         Task_sleep((unsigned int)arg0);
         GPIO_toggle(Board_LED0);
+    }
+}
+
+// GRLIB FXN
+Void guiRun() {
+    tContext sContext;
+    tRectangle sRect;
+
+    //
+    // The FPU should be enabled because some compilers will use floating-
+    // point registers, even for non-floating-point code.  If the FPU is not
+    // enabled this will cause a fault.  This also ensures that floating-
+    // point operations could be added to this application and would work
+    // correctly and use the hardware floating-point unit.  Finally, lazy
+    // stacking is enabled for interrupt handlers.  This allows floating-
+    // point instructions to be used within interrupt handlers, but at the
+    // expense of extra stack usage.
+    //
+    //FPUEnable();
+    //FPULazyStackingEnable(); <-- broke it
+
+    // Initialize the display driver.
+    Kentec320x240x16_SSD2119Init(g_ui32SysClock);
+
+    // Initialize the graphics context.
+    GrContextInit(&sContext, &g_sKentec320x240x16_SSD2119);
+
+    //
+    // Fill the top 24 rows of the screen with blue to create the banner.
+    //
+    sRect.i16XMin = 0;
+    sRect.i16YMin = 0;
+    sRect.i16XMax = GrContextDpyWidthGet(&sContext) - 1;
+    sRect.i16YMax = 23;
+
+    char buffer_print[buffer_size];
+    int i;
+    while (1) {
+        if (print_screen == 1) {
+            // Clear print buffer
+            for (i = 0; i < buffer_size; i++) {
+                buffer_print[i] = '\0';
+            }
+            // Load print buffer
+            for (i = 0; i < buffer_index; i++) {
+                buffer_print[i] = buffer[i];
+            }
+            buffer_index = 0; // reset index
+
+            GrContextForegroundSet(&sContext, ClrDarkBlue);
+            GrRectFill(&sContext, &sRect);
+
+            //
+            // Put a white box around the banner.
+            //
+            GrContextForegroundSet(&sContext, ClrWhite);
+            GrRectDraw(&sContext, &sRect);
+
+            //
+            // Put the application name in the middle of the banner.
+            //
+            GrContextFontSet(&sContext, &g_sFontCm20);
+            GrStringDrawCentered(&sContext, buffer_print, -1,
+                                 GrContextDpyWidthGet(&sContext) / 2, 8, 0);
+
+            buffer_index = 0;
+            print_screen = 0;
+        }
     }
 }
 
@@ -96,10 +170,12 @@ Void myHwiFunc() {
         buffer[buffer_index] = (char)UARTCharGetNonBlocking(UART0_BASE);
 
         // If enter pressed
-        //if (buffer[buffer_index] == '\r') {
-        //    print_screen = 1;
-        //}
+        if (buffer[buffer_index] == '\r') {
+            // Print to screen allow
+            print_screen = 1;
+        }
 
+        // Increment buffer to allow next char to enter
         buffer_index++;
     }
 
@@ -110,11 +186,12 @@ Void myHwiFunc() {
 }
 
 void mySwiFunc() {
+    // We want to start print from the start
     int buffer_init = buffer_index - 1;
     int index;
     while (buffer_index > 0) {
         buffer_index--;
-        index = buffer_init - buffer_index;
+        index = buffer_init - buffer_index; // start at 0 and count up
         UARTCharPutNonBlocking(UART0_BASE, buffer[index]);
     }
 }
@@ -125,6 +202,7 @@ void mySwiFunc() {
 int main(void)
 {
     Task_Params taskParams;
+    Task_Params taskParams_grlib;
 
     /* Call board init functions */
     Board_initGeneral();
@@ -145,6 +223,14 @@ int main(void)
     taskParams.stackSize = TASKSTACKSIZE;
     taskParams.stack = &task0Stack;
     Task_construct(&task0Struct, (Task_FuncPtr)heartBeatFxn, &taskParams, NULL);
+
+    /* Construct the grlib Task thread */
+    Task_Params_init(&taskParams_grlib);
+    taskParams_grlib.stackSize = TASKSTACKSIZE;
+    taskParams_grlib.stack = &taskgrStack;
+    Task_construct(&taskgrStruct, (Task_FuncPtr)guiRun, &taskParams_grlib, NULL);
+
+
 
     // Setup hardware Hwi
     Hwi_Params hwiParams;
