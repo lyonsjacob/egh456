@@ -108,7 +108,7 @@ Void guiRun() {
     sRect.i16XMin = 0;
     sRect.i16YMin = 0;
     sRect.i16XMax = GrContextDpyWidthGet(&sContext) - 1;
-    sRect.i16YMax = 23;
+    sRect.i16YMax = GrContextDpyHeightGet(&sContext) - 1;
 
     char buffer_print[buffer_size];
     int i;
@@ -139,7 +139,7 @@ Void guiRun() {
             GrContextFontSet(&sContext, &g_sFontCm20);
             System_printf("Printing: %s", buffer_print);
             GrStringDrawCentered(&sContext, buffer_print, -1,
-                                 GrContextDpyWidthGet(&sContext) / 2, 8, 0);
+                                 GrContextDpyWidthGet(&sContext) / 2, GrContextDpyHeightGet(&sContext) / 2, 0);
 
             buffer_index = 0;
             print_screen = 0;
