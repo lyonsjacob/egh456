@@ -16,7 +16,7 @@ BIOS_INC  = -I"/home/jordikitto/ti/tirtos_tivac_2_16_00_08/products/bios_6_45_01
 
 TARGET_INC = -I"/home/jordikitto/ti/tirtos_tivac_2_16_00_08/products/bios_6_45_01_29/packages/"
 
-INCS = $(BIOS_INC) $(TARGET_INC)  --include_path="/home/jordikitto/ti_rtos/empty_min_EK_TM4C1294XL_TI" --include_path="/home/jordikitto/ti_rtos/empty_min_EK_TM4C1294XL_TI" --include_path="/home/jordikitto/ti/tirtos_tivac_2_16_00_08/products/TivaWare_C_Series-2.1.1.71b" --include_path="/home/jordikitto/ti/tirtos_tivac_2_16_00_08/products/bios_6_45_01_29/packages/ti/sysbios/posix" --include_path="/home/jordikitto/ti/ccs901/ccs/tools/compiler/ti-cgt-arm_18.12.1.LTS/include" 
+INCS = $(BIOS_INC) $(TARGET_INC)  --include_path="/home/jordikitto/ti/tivaware_c_series_2_1_4_178/examples/boards/ek-tm4c1294xl-boostxl-kentec-s1" --include_path="/home/jordikitto/ti_rtos/egh456lab4qc" --include_path="/home/jordikitto/ti_rtos/egh456lab4qc" --include_path="/home/jordikitto/ti/tirtos_tivac_2_16_00_08/products/TivaWare_C_Series-2.1.1.71b" --include_path="/home/jordikitto/ti/tirtos_tivac_2_16_00_08/products/bios_6_45_01_29/packages/ti/sysbios/posix" --include_path="/home/jordikitto/ti/ccs901/ccs/tools/compiler/ti-cgt-arm_18.12.1.LTS/include" 
 
 CC = /home/jordikitto/ti/ccs901/ccs/tools/compiler/ti-cgt-arm_18.12.1.LTS/bin/armcl -c $(CCOPTS) -I /home/jordikitto/ti/ccs901/ccs/tools/compiler/ti-cgt-arm_18.12.1.LTS/include
 ASM = /home/jordikitto/ti/ccs901/ccs/tools/compiler/ti-cgt-arm_18.12.1.LTS/bin/armcl -c $(CCOPTS) -I /home/jordikitto/ti/ccs901/ccs/tools/compiler/ti-cgt-arm_18.12.1.LTS/include

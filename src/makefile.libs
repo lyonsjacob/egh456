@@ -1,6 +1,6 @@
 #
 # This file was generated based on the configuration script:
-#     /home/jordikitto/ti_rtos/empty_min_EK_TM4C1294XL_TI/empty_min.cfg
+#     /home/jordikitto/ti_rtos/egh456lab4qc/empty_min.cfg
 #
 # This makefile may be included in other makefiles that need to build
 # the libraries containing the compiled source files generated as
@@ -14,7 +14,7 @@
 #
 # The absolute path to the generated source directory (at the time the
 # sources were generated) is:
-#    /home/jordikitto/ti_rtos/empty_min_EK_TM4C1294XL_TI/src
+#    /home/jordikitto/ti_rtos/egh456lab4qc/src
 #
 GEN_SRC_DIR ?= ../src
 
