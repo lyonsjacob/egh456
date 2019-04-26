@@ -137,6 +137,7 @@ Void guiRun() {
             // Put the application name in the middle of the banner.
             //
             GrContextFontSet(&sContext, &g_sFontCm20);
+            System_printf("Printing: %s", buffer_print);
             GrStringDrawCentered(&sContext, buffer_print, -1,
                                  GrContextDpyWidthGet(&sContext) / 2, 8, 0);
 
@@ -169,6 +170,8 @@ Void myHwiFunc() {
         //
         buffer[buffer_index] = (char)UARTCharGetNonBlocking(UART0_BASE);
 
+        System_printf("Read char: %c\n", buffer[buffer_index]);
+
         // If enter pressed
         if (buffer[buffer_index] == '\r') {
             // Print to screen allow
@@ -192,6 +195,7 @@ void mySwiFunc() {
     while (buffer_index > 0) {
         buffer_index--;
         index = buffer_init - buffer_index; // start at 0 and count up
+        System_printf("Sending: %c\n", buffer[index]);
         UARTCharPutNonBlocking(UART0_BASE, buffer[index]);
     }
 }
