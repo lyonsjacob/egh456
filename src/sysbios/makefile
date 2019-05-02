@@ -1,26 +1,26 @@
 
-XOPTS = -I"/home/jordikitto/ti/xdctools_3_32_00_06_core/packages/" -Dxdc_target_types__=/home/jordikitto/ti/tirtos_tivac_2_16_00_08/products/bios_6_45_01_29/packages/ti/targets/arm/elf/std.h -Dxdc_target_name__=M4F
+XOPTS = -I"/home/riz/ti/xdctools_3_32_00_06_core/packages/" -Dxdc_target_types__=/home/riz/ti/tirtos_tivac_2_16_00_08/products/bios_6_45_01_29/packages/ti/targets/arm/elf/std.h -Dxdc_target_name__=M4F
 
-vpath % /home/jordikitto/ti/tirtos_tivac_2_16_00_08/products/bios_6_45_01_29/packages/ti/sysbios/
-vpath %.c /home/jordikitto/ti/xdctools_3_32_00_06_core/packages/
+vpath % /home/riz/ti/tirtos_tivac_2_16_00_08/products/bios_6_45_01_29/packages/ti/sysbios/
+vpath %.c /home/riz/ti/xdctools_3_32_00_06_core/packages/
 
 CCOPTS    = --endian=little -mv7M4 --abi=eabi --float_support=fpv4spd16 -q -ms --opt_for_speed=2  --program_level_compile -o3 -g --optimize_with_debug  -Dti_sysbios_knl_Task_minimizeLatency__D=FALSE -Dti_sysbios_knl_Clock_stopCheckNext__D=FALSE -Dti_sysbios_family_arm_m3_Hwi_enableException__D=TRUE -Dti_sysbios_family_arm_m3_Hwi_disablePriority__D=32U -Dti_sysbios_family_arm_m3_Hwi_numSparseInterrupts__D=0U
 
-XDC_ROOT  = /home/jordikitto/ti/xdctools_3_32_00_06_core/packages/
+XDC_ROOT  = /home/riz/ti/xdctools_3_32_00_06_core/packages/
 
-BIOS_ROOT = /home/jordikitto/ti/tirtos_tivac_2_16_00_08/products/bios_6_45_01_29/packages/ti/sysbios/
+BIOS_ROOT = /home/riz/ti/tirtos_tivac_2_16_00_08/products/bios_6_45_01_29/packages/ti/sysbios/
 
 BIOS_DEFS =  -Dti_sysbios_BIOS_swiEnabled__D=TRUE -Dti_sysbios_BIOS_taskEnabled__D=TRUE -Dti_sysbios_BIOS_clockEnabled__D=TRUE -Dti_sysbios_BIOS_runtimeCreatesEnabled__D=TRUE -Dti_sysbios_hal_Hwi_DISABLE_ALL_HOOKS -Dti_sysbios_knl_Swi_DISABLE_ALL_HOOKS -Dti_sysbios_BIOS_smpEnabled__D=FALSE -Dti_sysbios_Build_useHwiMacros -Dti_sysbios_knl_Swi_numPriorities__D=16 -Dti_sysbios_knl_Task_deleteTerminatedTasks__D=FALSE -Dti_sysbios_knl_Task_numPriorities__D=16 -Dti_sysbios_knl_Task_checkStackFlag__D=FALSE -Dti_sysbios_knl_Task_initStackFlag__D=TRUE -Dti_sysbios_knl_Task_DISABLE_ALL_HOOKS -Dti_sysbios_knl_Clock_TICK_SOURCE=ti_sysbios_knl_Clock_TickSource_TIMER -Dti_sysbios_knl_Clock_TICK_MODE=ti_sysbios_knl_Clock_TickMode_PERIODIC -Dti_sysbios_hal_Core_delegate_getId=ti_sysbios_hal_CoreNull_getId__E -Dti_sysbios_hal_Core_delegate_interruptCore=ti_sysbios_hal_CoreNull_interruptCore__E -Dti_sysbios_hal_Core_delegate_lock=ti_sysbios_hal_CoreNull_lock__E -Dti_sysbios_hal_Core_delegate_unlock=ti_sysbios_hal_CoreNull_unlock__E -Dti_sysbios_hal_Core_numCores__D=1 -Dti_sysbios_hal_CoreNull_numCores__D=1 -Dti_sysbios_utils_Load_taskEnabled__D=TRUE -Dti_sysbios_utils_Load_swiEnabled__D=FALSE -Dti_sysbios_utils_Load_hwiEnabled__D=FALSE -Dti_sysbios_family_arm_m3_Hwi_dispatcherSwiSupport__D=TRUE -Dti_sysbios_family_arm_m3_Hwi_dispatcherTaskSupport__D=TRUE -Dti_sysbios_family_arm_m3_Hwi_dispatcherAutoNestingSupport__D=TRUE -Dti_sysbios_family_arm_m3_Hwi_dispatcherIrpTrackingSupport__D=TRUE -Dti_sysbios_knl_Semaphore_supportsEvents__D=FALSE -Dti_sysbios_knl_Semaphore_supportsPriority__D=FALSE -Dxdc_runtime_Assert_DISABLE_ALL -Dxdc_runtime_Log_DISABLE_ALL
 
-BIOS_INC  = -I"/home/jordikitto/ti/tirtos_tivac_2_16_00_08/products/bios_6_45_01_29/packages/"
+BIOS_INC  = -I"/home/riz/ti/tirtos_tivac_2_16_00_08/products/bios_6_45_01_29/packages/"
 
-TARGET_INC = -I"/home/jordikitto/ti/tirtos_tivac_2_16_00_08/products/bios_6_45_01_29/packages/"
+TARGET_INC = -I"/home/riz/ti/tirtos_tivac_2_16_00_08/products/bios_6_45_01_29/packages/"
 
-INCS = $(BIOS_INC) $(TARGET_INC)  --include_path="/home/jordikitto/ti/tivaware_c_series_2_1_4_178/examples/boards/ek-tm4c1294xl-boostxl-kentec-s1" --include_path="/home/jordikitto/ti_rtos/egh456lab4qc" --include_path="/home/jordikitto/ti_rtos/egh456lab4qc" --include_path="/home/jordikitto/ti/tirtos_tivac_2_16_00_08/products/TivaWare_C_Series-2.1.1.71b" --include_path="/home/jordikitto/ti/tirtos_tivac_2_16_00_08/products/bios_6_45_01_29/packages/ti/sysbios/posix" --include_path="/home/jordikitto/ti/ccs901/ccs/tools/compiler/ti-cgt-arm_18.12.1.LTS/include" 
+INCS = $(BIOS_INC) $(TARGET_INC)  --include_path="/home/riz/ti/tivaware_c_series_2_1_4_178/examples/boards/ek-tm4c1294xl-boostxl-kentec-s1" --include_path="/home/riz/workspace_ccs/Assignment" --include_path="/home/riz/workspace_ccs/Assignment" --include_path="/home/riz/ti/tirtos_tivac_2_16_00_08/products/TivaWare_C_Series-2.1.1.71b" --include_path="/home/riz/ti/tirtos_tivac_2_16_00_08/products/bios_6_45_01_29/packages/ti/sysbios/posix" --include_path="/opt/ti/ccs901/ccs/tools/compiler/ti-cgt-arm_18.12.1.LTS/include" 
 
-CC = /home/jordikitto/ti/ccs901/ccs/tools/compiler/ti-cgt-arm_18.12.1.LTS/bin/armcl -c $(CCOPTS) -I /home/jordikitto/ti/ccs901/ccs/tools/compiler/ti-cgt-arm_18.12.1.LTS/include
-ASM = /home/jordikitto/ti/ccs901/ccs/tools/compiler/ti-cgt-arm_18.12.1.LTS/bin/armcl -c $(CCOPTS) -I /home/jordikitto/ti/ccs901/ccs/tools/compiler/ti-cgt-arm_18.12.1.LTS/include
-AR = /home/jordikitto/ti/ccs901/ccs/tools/compiler/ti-cgt-arm_18.12.1.LTS/bin/armar rq
+CC = /opt/ti/ccs901/ccs/tools/compiler/ti-cgt-arm_18.12.1.LTS/bin/armcl -c $(CCOPTS) -I /opt/ti/ccs901/ccs/tools/compiler/ti-cgt-arm_18.12.1.LTS/include
+ASM = /opt/ti/ccs901/ccs/tools/compiler/ti-cgt-arm_18.12.1.LTS/bin/armcl -c $(CCOPTS) -I /opt/ti/ccs901/ccs/tools/compiler/ti-cgt-arm_18.12.1.LTS/include
+AR = /opt/ti/ccs901/ccs/tools/compiler/ti-cgt-arm_18.12.1.LTS/bin/armar rq
 
 DEL = rm -f
 CP = cp -f
