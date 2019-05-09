@@ -39,6 +39,8 @@ extern "C" {
 
 #include "EK_TM4C1294XL.h"
 
+
+
 #define Board_initEMAC              EK_TM4C1294XL_initEMAC
 #define Board_initGeneral           EK_TM4C1294XL_initGeneral
 #define Board_initGPIO              EK_TM4C1294XL_initGPIO
@@ -59,6 +61,10 @@ extern "C" {
 #define Board_LED2                  EK_TM4C1294XL_D2
 #define Board_BUTTON0               EK_TM4C1294XL_USR_SW1
 #define Board_BUTTON1               EK_TM4C1294XL_USR_SW2
+#define Board_HALL_A                HALL_A
+#define Board_HALL_B                HALL_B
+#define Board_HALL_C                HALL_C
+#define Board_DVR_Enable            DVR_Enable
 
 #define Board_I2C0                  EK_TM4C1294XL_I2C7
 #define Board_I2C1                  EK_TM4C1294XL_I2C8
@@ -66,8 +72,12 @@ extern "C" {
 #define Board_I2C_NFC               EK_TM4C1294XL_I2C7
 #define Board_I2C_TPL0401           EK_TM4C1294XL_I2C7
 
-#define Board_PWM0                  EK_TM4C1294XL_PWM0
-#define Board_PWM1                  EK_TM4C1294XL_PWM0
+#define Board_PWM0                  EK_TM4C1294XL_PWM1
+#define Board_PWM1                  EK_TM4C1294XL_PWM2
+#define Board_PWM2                  EK_TM4C1294XL_PWM3
+#define Board_PWM3                  EK_TM4C1294XL_PWM4
+#define Board_PWM4                  EK_TM4C1294XL_CCP0
+#define Board_PWM5                  EK_TM4C1294XL_CCP1
 
 #define Board_SDSPI0                EK_TM4C1294XL_SDSPI0
 #define Board_SDSPI1                EK_TM4C1294XL_SDSPI1

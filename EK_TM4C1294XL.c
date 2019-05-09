@@ -58,6 +58,9 @@
 #include <driverlib/sysctl.h>
 #include <driverlib/uart.h>
 #include <driverlib/udma.h>
+#include "driverlib/timer.h"
+
+
 
 #include "EK_TM4C1294XL.h"
 
@@ -292,11 +295,23 @@ GPIO_PinConfig gpioPinConfigs[] = {
     /* EK_TM4C1294XL_USR_SW2 */
     GPIOTiva_PJ_1 | GPIO_CFG_IN_PU | GPIO_CFG_IN_INT_RISING,
 
+    /* HALL A */
+    GPIOTiva_PM_3 | GPIO_CFG_IN_PU | GPIO_CFG_IN_INT_BOTH_EDGES,
+    /*HALL B*/
+    GPIOTiva_PH_2 | GPIO_CFG_IN_PU | GPIO_CFG_IN_INT_BOTH_EDGES,
+    /*HALL C*/
+    GPIOTiva_PN_2 | GPIO_CFG_IN_PU | GPIO_CFG_IN_INT_BOTH_EDGES,
+
+    /*DVR_Enable*/
+    GPIOTiva_PC_6 | GPIO_CFG_OUT_OD_NOPULL | GPIO_CFG_OUT_HIGH,
+
     /* Output pins */
     /* EK_TM4C1294XL_USR_D1 */
     GPIOTiva_PN_1 | GPIO_CFG_OUT_STD | GPIO_CFG_OUT_STR_HIGH | GPIO_CFG_OUT_LOW,
     /* EK_TM4C1294XL_USR_D2 */
     GPIOTiva_PN_0 | GPIO_CFG_OUT_STD | GPIO_CFG_OUT_STR_HIGH | GPIO_CFG_OUT_LOW,
+
+
 };
 
 /*
@@ -308,7 +323,10 @@ GPIO_PinConfig gpioPinConfigs[] = {
  */
 GPIO_CallbackFxn gpioCallbackFunctions[] = {
     NULL,  /* EK_TM4C1294XL_USR_SW1 */
-    NULL   /* EK_TM4C1294XL_USR_SW2 */
+    NULL,   /* EK_TM4C1294XL_USR_SW2 */
+    NULL,   /*HALL_A*/
+    NULL,   /*HALL_B*/
+    NULL    /*HALL_C*/
 };
 
 /* The device-specific GPIO_config structure */
@@ -415,15 +433,43 @@ void EK_TM4C1294XL_initI2C(void)
 
 #include <ti/drivers/PWM.h>
 #include <ti/drivers/pwm/PWMTiva.h>
+#include <ti/drivers/pwm/PWMTimerTiva.h>
 
-PWMTiva_Object pwmTivaObjects[EK_TM4C1294XL_PWMCOUNT];
+PWMTiva_Object pwmTivaObjects[4];
+PWMTimerTiva_Object pwmTimerTivaObjects[2];
 
-const PWMTiva_HWAttrs pwmTivaHWAttrs[EK_TM4C1294XL_PWMCOUNT] = {
+const PWMTiva_HWAttrs pwmTivaHWAttrs[4] = {
     {
         .baseAddr = PWM0_BASE,
-        .pwmOutput = PWM_OUT_0,
+        .pwmOutput = PWM_OUT_1,
+        .pwmGenOpts = PWM_GEN_MODE_DOWN | PWM_GEN_MODE_DBG_RUN
+    },
+    {
+        .baseAddr = PWM0_BASE,
+        .pwmOutput = PWM_OUT_2,
+        .pwmGenOpts = PWM_GEN_MODE_DOWN | PWM_GEN_MODE_DBG_RUN
+    },
+    {
+        .baseAddr = PWM0_BASE,
+        .pwmOutput = PWM_OUT_3,
+        .pwmGenOpts = PWM_GEN_MODE_DOWN | PWM_GEN_MODE_DBG_RUN
+    },
+    {
+        .baseAddr = PWM0_BASE,
+        .pwmOutput = PWM_OUT_4,
         .pwmGenOpts = PWM_GEN_MODE_DOWN | PWM_GEN_MODE_DBG_RUN
     }
+};
+
+const PWMTimerTiva_HWAttrs pwmTimerTivaHWAttrs[2] = {
+     {
+         .baseAddr = TIMER0_BASE,
+         .timer = TIMER_A,
+     },
+     {
+         .baseAddr = TIMER0_BASE,
+         .timer = TIMER_B,
+     }
 };
 
 const PWM_Config PWM_config[] = {
@@ -431,6 +477,31 @@ const PWM_Config PWM_config[] = {
         .fxnTablePtr = &PWMTiva_fxnTable,
         .object = &pwmTivaObjects[0],
         .hwAttrs = &pwmTivaHWAttrs[0]
+    },
+    {
+        .fxnTablePtr = &PWMTiva_fxnTable,
+        .object = &pwmTivaObjects[1],
+        .hwAttrs = &pwmTivaHWAttrs[1]
+    },
+    {
+        .fxnTablePtr = &PWMTiva_fxnTable,
+        .object = &pwmTivaObjects[2],
+        .hwAttrs = &pwmTivaHWAttrs[2]
+    },
+    {
+        .fxnTablePtr = &PWMTiva_fxnTable,
+        .object = &pwmTivaObjects[3],
+        .hwAttrs = &pwmTivaHWAttrs[3]
+    },
+    {
+        .fxnTablePtr = &PWMTimerTiva_fxnTable,
+        .object = &pwmTimerTivaObjects[0],
+        .hwAttrs = &pwmTimerTivaHWAttrs[0]
+    },
+    {
+        .fxnTablePtr = &PWMTimerTiva_fxnTable,
+        .object = &pwmTimerTivaObjects[1],
+        .hwAttrs = &pwmTimerTivaHWAttrs[1]
     },
     {NULL, NULL, NULL}
 };
@@ -442,14 +513,20 @@ void EK_TM4C1294XL_initPWM(void)
 {
     /* Enable PWM peripherals */
     SysCtlPeripheralEnable(SYSCTL_PERIPH_PWM0);
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0);
 
-    /*
-     * Enable PWM output on GPIO pins.  PWM output is connected to an Ethernet
-     * LED on the development board (D4).  The PWM configuration
-     * below will disable Ethernet functionality.
-     */
-    GPIOPinConfigure(GPIO_PF0_M0PWM0);
-    GPIOPinTypePWM(GPIO_PORTF_BASE, GPIO_PIN_0);
+    SysCtlDelay(3);
+
+    GPIOPinConfigure(GPIO_PF1_M0PWM1);
+    GPIOPinConfigure(GPIO_PF2_M0PWM2);
+    GPIOPinConfigure(GPIO_PF3_M0PWM3);
+    GPIOPinConfigure(GPIO_PG0_M0PWM4);
+    GPIOPinConfigure(GPIO_PL4_T0CCP0);
+    GPIOPinConfigure(GPIO_PL5_T0CCP1);
+
+    GPIOPinTypePWM(GPIO_PORTF_BASE, GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3);
+    GPIOPinTypePWM(GPIO_PORTG_BASE, GPIO_PIN_0);
+    GPIOPinTypeTimer(GPIO_PORTL_BASE, GPIO_PIN_4 | GPIO_PIN_5);
 
     PWM_init();
 }
