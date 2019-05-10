@@ -1,5 +1,6 @@
 /* XDCtools Header files */
 #include <xdc/std.h>
+#include <math.h>
 
 /* BIOS Header files */
 #include <ti/sysbios/BIOS.h>
@@ -45,7 +46,9 @@
 #include "utils/ustdlib.h"
 #include "driverlib/fpu.h"
 #include "images.h"
-
+#include "driverlib/sysctl.h"
+#include "grlib/pushbutton.h"
+#include "grlib/container.h"
 
 
 
@@ -58,7 +61,17 @@
 uint32_t g_ui32SysClock;
 
 
-/* - - - - - - GUI FUNCTIONALITY - - - - - - -*/
+//GLOBAL VARIABLES
+uint16_t speed,current,acc,temp;
+uint8_t sec,min,hour,day,month,year; //timer vars
+
+
+
+//*****************************************************************************
+//*****************************************************************************
+// GUI GUI GUI GUI GUI GUI GUI GUI GUI GUI GUI GUI GUI GUI GUI GUI GUI GUI GUI
+//*****************************************************************************
+//*****************************************************************************
 
 //*****************************************************************************
 //
@@ -77,71 +90,97 @@ tDMAControlTable psDMAControlTable[64] __attribute__ ((aligned(1024)));
 
 
 
-Task_Struct gui_struct;
-Char gui_stack[TASKSTACKSIZE];
+
 
 extern tCanvasWidget tabs[];
-//void paintMotorControl(tWidget *psWidget, tContext *psContext);
+void paintMotorControl(tWidget *psWidget, tContext *psContext);
 void paintAnalytics(tWidget *psWidget, tContext *psContext);
 void OnSliderChange(tWidget *psWidget, int32_t i32Value);
+void startMotor(), stopMotor(), onNext(), onBack();
 
-/*
-Canvas(motorControl, tabs, 0, 0, &g_sKentec320x240x16_SSD2119, 0,
-       24, 320, 166, CANVAS_STYLE_APP_DRAWN, 0, 0, 0, 0, 0, 0, paintMotorControl);*/
-Canvas(analytics, tabs, 0, 0, &g_sKentec320x240x16_SSD2119, 0,
+uint32_t disp_tab;
+
+Canvas(analytics, tabs+1, 0, 0, &g_sKentec320x240x16_SSD2119, 0,
        24, 320, 166, CANVAS_STYLE_APP_DRAWN, 0, 0, 0, 0, 0, 0, paintAnalytics);
 
-Canvas(g_sSliderValueCanvas, tabs, 0, 0,
-       &g_sKentec320x240x16_SSD2119, 210, 30, 60, 40,
-       CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_OPAQUE, ClrBlack, 0, ClrSilver,
-       &g_sFontCm24, "50%",
-       0, 0);
+//*****************************************************************************
+//
+// Static Banners (top, Bottom, time, day or night)
+//
+//*****************************************************************************
+
+//BACK AND FOWARD BUTTONS
+RectangularButton(nextButton, 0, 0, 0, &g_sKentec320x240x16_SSD2119, 270, 190,
+                  50, 50, PB_STYLE_IMG | PB_STYLE_TEXT, ClrBlack, ClrBlack, 0,
+                  ClrSilver, &g_sFontCm20, "+", g_pui8Blue50x50,
+                  g_pui8Blue50x50Press, 0, 0, onNext);
+
+RectangularButton(backButton, 0, 0, 0, &g_sKentec320x240x16_SSD2119, 0, 190,
+                  50, 50, PB_STYLE_FILL, ClrBlack, ClrBlack, 0, ClrSilver,
+                  &g_sFontCm20, "-", g_pui8Blue50x50, g_pui8Blue50x50Press, 0, 0,
+                  onBack);
+
+//START AND STOP BUTTONS
+RectangularButton(startButton, 0, 0, 0, &g_sKentec320x240x16_SSD2119, 110, 190,
+                  100, 50, PB_STYLE_FILL | PB_STYLE_OUTLINE | PB_STYLE_TEXT, ClrLimeGreen,
+                  ClrLimeGreen, ClrWhite, ClrWhite, &g_sFontCm20, "Start", 0,
+                  0, 0, 0, startMotor);
+RectangularButton(stopButton, 0, 0, 0, &g_sKentec320x240x16_SSD2119, 110, 190,
+                  100, 50, PB_STYLE_FILL | PB_STYLE_OUTLINE | PB_STYLE_TEXT, ClrDarkSalmon,
+                  ClrDarkSalmon, ClrWhite, ClrWhite, &g_sFontCm20, "Stop", 0,
+                  0, 0, 0, stopMotor);
+//TITLE OF PANEL
+char * namesOfPanels[] = {"  Motor Control  ", "  Motor Analytics  " };
+Canvas(titleNames, 0, 0, 0, &g_sKentec320x240x16_SSD2119, 70, 0, 200, 30,
+       CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_OPAQUE, 0, 0, ClrWhite,
+       &g_sFontCm20, 0, 0, 0);
+
+//DAY OR NIGHT FUNCTIONALITY
+char * dayOrNightNames[] = { "Day", "Night" };
+Canvas(dayOrNight, 0, 0, 0, &g_sKentec320x240x16_SSD2119, 270, 0, 50, 30,
+       CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_OPAQUE, 0, 0, ClrSilver,
+       &g_sFontCm14, 0, 0, 0);
+
+//TIMER
+Canvas(dispTime, 0, 0, 0, &g_sKentec320x240x16_SSD2119, 5, 0, 50, 30,
+       CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_OPAQUE, 0, 0, ClrSilver,
+       &g_sFontCm14, 0, 0, 0);
+
+//*****************************************************************************
+//
+// Motor Control Widgets --> sliders = the canvas
+//
+//*****************************************************************************
+
+Canvas(motorControl, tabs, 0, 0, &g_sKentec320x240x16_SSD2119, 0,
+       24, 320, 166, CANVAS_STYLE_APP_DRAWN, 0, 0, 0, 0, 0, 0, paintMotorControl);
 
 tSliderWidget sliders[] = {
-    SliderStruct(tabs, sliders + 1, 0,
-                &g_sKentec320x240x16_SSD2119, 5, 115, 220, 30, 0, 100, 25,
+   SliderStruct(tabs, sliders+1, 0,
+               &g_sKentec320x240x16_SSD2119, 170, 60, 130, 30, 0, 100, 0,
+               (SL_STYLE_FILL | SL_STYLE_BACKG_FILL | SL_STYLE_OUTLINE |
+                SL_STYLE_TEXT | SL_STYLE_BACKG_TEXT),
+               ClrGray, ClrBlack, ClrSilver, ClrWhite, ClrWhite,
+               &g_sFontCm14, "0 mps2", 0, 0, OnSliderChange),
+   SliderStruct(tabs, sliders+2, 0,
+               &g_sKentec320x240x16_SSD2119, 20, 140, 130, 30, 0, 100, 0,
+               (SL_STYLE_FILL | SL_STYLE_BACKG_FILL | SL_STYLE_OUTLINE |
+                SL_STYLE_TEXT | SL_STYLE_BACKG_TEXT),
+               ClrGray, ClrBlack, ClrSilver, ClrWhite, ClrWhite,
+               &g_sFontCm14, "800 mA", 0, 0, OnSliderChange),
+   SliderStruct(tabs, sliders+3, 0,
+               &g_sKentec320x240x16_SSD2119, 170, 140, 130, 30, 0, 100, 0,
+               (SL_STYLE_FILL | SL_STYLE_BACKG_FILL | SL_STYLE_OUTLINE |
+                SL_STYLE_TEXT | SL_STYLE_BACKG_TEXT),
+               ClrGray, ClrBlack, ClrSilver, ClrWhite, ClrWhite,
+               &g_sFontCm14, "30 celsius", 0, 0, OnSliderChange),
+    SliderStruct(tabs, &motorControl,0,
+                &g_sKentec320x240x16_SSD2119, 20, 60, 130, 30, 0, 100, 0,
                 (SL_STYLE_FILL | SL_STYLE_BACKG_FILL | SL_STYLE_OUTLINE |
                  SL_STYLE_TEXT | SL_STYLE_BACKG_TEXT),
                 ClrGray, ClrBlack, ClrSilver, ClrWhite, ClrWhite,
-                &g_sFontCm20, "25%", 0, 0, OnSliderChange),
-    SliderStruct(tabs, sliders + 2, 0,
-                &g_sKentec320x240x16_SSD2119, 5, 155, 220, 25, 0, 100, 25,
-                (SL_STYLE_FILL | SL_STYLE_BACKG_FILL | SL_STYLE_OUTLINE |
-                 SL_STYLE_TEXT),
-                ClrWhite, ClrBlueViolet, ClrSilver, ClrBlack, 0,
-                &g_sFontCm18, "Foreground Text Only", 0, 0, OnSliderChange),
-    SliderStruct(tabs, sliders + 3, 0,
-                &g_sKentec320x240x16_SSD2119, 240, 70, 26, 110, 0, 100, 50,
-                (SL_STYLE_FILL | SL_STYLE_BACKG_FILL | SL_STYLE_VERTICAL |
-                 SL_STYLE_OUTLINE | SL_STYLE_LOCKED), ClrDarkGreen,
-                 ClrDarkRed, ClrSilver, 0, 0, 0, 0, 0, 0, 0),
-    SliderStruct(tabs, sliders + 4, 0,
-                &g_sKentec320x240x16_SSD2119, 280, 30, 30, 150, 0, 100, 75,
-                (SL_STYLE_IMG | SL_STYLE_BACKG_IMG | SL_STYLE_VERTICAL |
-                SL_STYLE_OUTLINE), 0, ClrBlack, ClrSilver, 0, 0, 0,
-                0, g_pui8GettingHotter28x148, g_pui8GettingHotter28x148Mono,
-                OnSliderChange),
-    SliderStruct(tabs, sliders + 5, 0,
-                &g_sKentec320x240x16_SSD2119, 5, 30, 195, 37, 0, 100, 50,
-                SL_STYLE_IMG | SL_STYLE_BACKG_IMG, 0, 0, 0, 0, 0, 0,
-                0, g_pui8GreenSlider195x37, g_pui8RedSlider195x37,
-                OnSliderChange),
-    SliderStruct(tabs, &g_sSliderValueCanvas, 0,
-                &g_sKentec320x240x16_SSD2119, 5, 80, 220, 25, 0, 100, 50,
-                (SL_STYLE_FILL | SL_STYLE_BACKG_FILL | SL_STYLE_TEXT |
-                 SL_STYLE_BACKG_TEXT | SL_STYLE_TEXT_OPAQUE |
-                 SL_STYLE_BACKG_TEXT_OPAQUE),
-                ClrBlue, ClrYellow, ClrSilver, ClrYellow, ClrBlue,
-                &g_sFontCm18, "Text in both areas", 0, 0,
-                OnSliderChange),
-
-    //add extra canvases here as slider struct.
+                &g_sFontCm14, "0 rpm", 0, 0, OnSliderChange),
 };
-#define SLIDER_TEXT_VAL_INDEX   0
-#define SLIDER_LOCKED_INDEX     2
-#define SLIDER_CANVAS_VAL_INDEX 4
-
-#define NUM_SLIDERS (sizeof(g_psSliders) / sizeof(g_psSliders[0]))
 
 tCanvasWidget tabs[] = {
     CanvasStruct(0, 0, sliders, &g_sKentec320x240x16_SSD2119, 0,
@@ -152,59 +191,157 @@ tCanvasWidget tabs[] = {
 
 
 void paintAnalytics(tWidget *psWidget, tContext *psContext){
-    //function here
+    GrContextFontSet(psContext, &g_sFontCm16);
+    GrContextForegroundSet(psContext, ClrSilver);
+
+}
+
+void paintMotorControl(tWidget *psWidget, tContext *psContext){
+
+    GrContextFontSet(psContext, &g_sFontCm16);
+    GrContextForegroundSet(psContext, ClrSilver);
+
+
+    GrStringDraw(psContext, "Set Speed", -1, 54, 40, 0);
+    GrStringDraw(psContext, "Max Accelerometer", -1, 176, 40, 0);
+    GrStringDraw(psContext, "Max Current", -1, 50, 120, 0);
+    GrStringDraw(psContext, "Max Temperature", -1, 180, 120, 0);
 }
 
 void OnSliderChange(tWidget *psWidget, int32_t i32Value){
 
-    static char pcCanvasText[5];
-    static char pcSliderText[5];
+    static char pcSliderText[10];
 
-    //
-    // Is this the widget whose value we mirror in the canvas widget and the
-    // locked slider?
-    //
-    if(psWidget == (tWidget *)&sliders[SLIDER_CANVAS_VAL_INDEX])
-    {
-        //
-        // Yes - update the canvas to show the slider value.
-        //
-        usprintf(pcCanvasText, "%3d%%", i32Value);
-        CanvasTextSet(&g_sSliderValueCanvas, pcCanvasText);
-        WidgetPaint((tWidget *)&g_sSliderValueCanvas);
-
-        //
-        // Also update the value of the locked slider to reflect this one.
-        //
-        SliderValueSet(&sliders[SLIDER_LOCKED_INDEX], i32Value);
-        WidgetPaint((tWidget *)&sliders[SLIDER_LOCKED_INDEX]);
+    //Accelerometer changed
+    if(psWidget == (tWidget *)&sliders[0]){
+        acc = i32Value; // 1 mps^2? [0 -> 100]
+        usprintf(pcSliderText, "%d mps2", acc);
+        SliderTextSet(&sliders[0], pcSliderText);
+        WidgetPaint((tWidget *)&sliders[0]);
     }
 
-    if(psWidget == (tWidget *)&sliders[SLIDER_TEXT_VAL_INDEX])
-    {
-        //
-        // Yes - update the canvas to show the slider value.
-        //
-        usprintf(pcSliderText, "%3d%%", i32Value);
-        SliderTextSet(&sliders[SLIDER_TEXT_VAL_INDEX], pcSliderText);
-        WidgetPaint((tWidget *)&sliders[SLIDER_TEXT_VAL_INDEX]);
+    //Current changed
+    if(psWidget == (tWidget *)&sliders[1]){
+        current = (i32Value+200)*4; // STEPS 10 mA [800 -> 1200]
+        usprintf(pcSliderText, "%d mA", current);
+        SliderTextSet(&sliders[1], pcSliderText);
+        WidgetPaint((tWidget *)&sliders[1]);
     }
+
+    //Temp changed
+    if(psWidget == (tWidget *)&sliders[2]){
+        temp = (uint16_t)((i32Value+90)/3); // [30 -> 63]
+        usprintf(pcSliderText, "%d celsius", temp);
+        SliderTextSet(&sliders[2], pcSliderText);
+        WidgetPaint((tWidget *)&sliders[2]);
+    }
+
+    //Speed changed
+    if(psWidget == (tWidget *)&sliders[3]){
+        speed = i32Value*30; // STEPS OF 30 RPM [0 -> 3000]
+        usprintf(pcSliderText, "%d rpm", speed);
+        SliderTextSet(&sliders[3], pcSliderText);
+        WidgetPaint((tWidget *)&sliders[3]);
+    }
+}
+
+void startMotor(){
+    GPIO_write(Board_LED0, Board_LED_ON);
+
+    WidgetRemove((tWidget *)&startButton);
+    WidgetAdd(WIDGET_ROOT, (tWidget *)&stopButton);
+    WidgetPaint((tWidget *)&stopButton);
+}
+
+void stopMotor(){
+    GPIO_write(Board_LED0, Board_LED_OFF);
+
+    WidgetRemove((tWidget *)&stopButton);
+    WidgetAdd(WIDGET_ROOT, (tWidget *)&startButton);
+    WidgetPaint((tWidget *)&startButton);
+}
+
+void onNext(){
+
+    if(disp_tab==1) return;
+
+    WidgetRemove((tWidget *)(tabs + disp_tab));
+
+    disp_tab++;
+
+    WidgetAdd(WIDGET_ROOT, (tWidget *)(tabs + disp_tab));
+    WidgetPaint((tWidget *)(tabs + disp_tab));
+
+    CanvasTextSet(&titleNames, namesOfPanels[disp_tab]);
+    WidgetPaint((tWidget *)&titleNames);
+
+
+    //DISPLAYING OF THE BUTTONS
+    PushButtonImageOff(&nextButton);
+    PushButtonTextOff(&nextButton);
+    PushButtonFillOn(&nextButton);
+    WidgetPaint((tWidget *)&nextButton);
+
+    PushButtonImageOn(&backButton);
+    PushButtonTextOn(&backButton);
+    PushButtonFillOff(&backButton);
+    WidgetPaint((tWidget *)&backButton);
+}
+
+void onBack(){
+
+    if(disp_tab==0) return;
+
+    WidgetRemove((tWidget *)(tabs + disp_tab));
+
+    disp_tab--;
+
+    WidgetAdd(WIDGET_ROOT, (tWidget *)(tabs + disp_tab));
+    WidgetPaint((tWidget *)(tabs + disp_tab));
+
+    CanvasTextSet(&titleNames, namesOfPanels[disp_tab]);
+    WidgetPaint((tWidget *)&titleNames);
+
+    //DISPLAYING OF THE BUTTONS
+    PushButtonImageOff(&backButton);
+    PushButtonTextOff(&backButton);
+    PushButtonFillOn(&backButton);
+    WidgetPaint((tWidget *)&backButton);
+
+    PushButtonImageOn(&nextButton);
+    PushButtonTextOn(&nextButton);
+    PushButtonFillOff(&nextButton);
+    WidgetPaint((tWidget *)&nextButton);
+}
+
+void changeDisplayToNight(){
+    CanvasTextSet(&dayOrNight, dayOrNightNames[1]);
+    GPIO_write(Board_LED1, Board_LED_ON);
+}
+
+void changeDisplayToDay(){
+    CanvasTextSet(&dayOrNight, dayOrNightNames[0]);
+    GPIO_write(Board_LED1, Board_LED_OFF);
+}
+
+void changeDisplayDate(){
+    static char timer[10];
+    usprintf(timer, "%02d:%02d:%02d",hour,min,sec);
+    CanvasTextSet(&dispTime, timer);
 }
 /* - - - - - END GUI FUNCTIONALITY - - - - - - */
 
 
 /* - - - - - - GUI TASK FUNCTIONALITY - - - - - */
 
-void RTOSTouchScreenInit(uint32_t ui32SysClock){
-    //check touch.c screen init
-}
 
+Task_Struct gui_struct;
+Char gui_stack[TASKSTACKSIZE];
 
-uint32_t disp_tab;
 // GRLIB FXN
 Void guiRun() {
     tContext sContext;
-    tRectangle sRect;
+    //tRectangle sRect;
 
     FPUEnable();
     FPULazyStackingEnable();
@@ -214,26 +351,6 @@ Void guiRun() {
 
     // Initialize the graphics context.
     GrContextInit(&sContext, &g_sKentec320x240x16_SSD2119);
-
-    //
-    // Fill the top 24 rows of the screen with blue to create the banner.
-    //
-    sRect.i16XMin = 0;
-    sRect.i16YMin = 0;
-    sRect.i16XMax = GrContextDpyWidthGet(&sContext) - 1;
-    sRect.i16YMax = 23;
-    GrContextForegroundSet(&sContext, ClrDarkBlue);
-    GrRectFill(&sContext, &sRect);
-
-    GrContextForegroundSet(&sContext, ClrWhite);
-    GrRectDraw(&sContext, &sRect);
-
-    //
-    // Put the application name in the middle of the banner.
-    //
-    GrContextFontSet(&sContext, &g_sFontCm20);
-    GrStringDrawCentered(&sContext, "Motor Control", -1,
-                         GrContextDpyWidthGet(&sContext) / 2, 8, 0);
 
     //
     // Configure and enable uDMA
@@ -247,18 +364,28 @@ Void guiRun() {
     // Initialize the touch screen driver and have it route its messages to the
     // widget tree.
     //
-    //TouchScreenInit(g_ui32SysClock);
-    //TouchScreenCallbackSet(WidgetPointerMessage);
+    TouchScreenInit(g_ui32SysClock);
+    TouchScreenCallbackSet(WidgetPointerMessage);
 
     //
     // Add the first panel to the widget tree.
     //
-    disp_tab = 0;
+    disp_tab=0, sec=0, hour=0, min=0;
     WidgetAdd(WIDGET_ROOT, (tWidget *)tabs);
+    WidgetAdd(WIDGET_ROOT, (tWidget *)&startButton);
+    WidgetAdd(WIDGET_ROOT, (tWidget *)&titleNames);
+    WidgetAdd(WIDGET_ROOT, (tWidget *)&nextButton);
+    WidgetAdd(WIDGET_ROOT, (tWidget *)&backButton);
+    WidgetAdd(WIDGET_ROOT, (tWidget *)&dayOrNight);
+    WidgetAdd(WIDGET_ROOT, (tWidget *)&dispTime);
 
-    //
-    // Issue the initial paint request to the widgets.
-    //
+    // get this working...
+    changeDisplayDate();
+
+    // run get lux here and change this line
+    changeDisplayToNight();//changeDisplayToDay();
+
+    CanvasTextSet(&titleNames, namesOfPanels[0]);
     WidgetPaint(WIDGET_ROOT);
 
     while (1) {
@@ -266,16 +393,44 @@ Void guiRun() {
     }
 }
 
-/* - - - - - - END GUI TASK FUNCTIONALITY - - - - - */
+//*****************************************************************************
+//*****************************************************************************
+// END GUI END GUI END GUI END GUI END GUI END GUI END GUI END GUI END GUI
+//*****************************************************************************
+//*****************************************************************************
+
+
+
+
 
 /*
  *  ======== main ========
  */
+
+Hwi_Handle adcHwi;
+
+void setup_adc_hwi(){
+    Hwi_Params adc_hwi_params;
+    Error_Block adc_hwi_eb;
+    Error_init(&adc_hwi_eb);
+    Hwi_Params_init(&adc_hwi_params);
+    int id = INT_ADC0SS3_TM4C123;
+    adcHwi = Hwi_create(id, (Hwi_FuncPtr)TouchScreenIntHandler, &adc_hwi_params, &adc_hwi_eb);
+    if (adcHwi == NULL) System_abort("Hwi create failed");
+}
+
+void setup_gui_task(){
+    Task_Params gui_params;
+    Task_Params_init(&gui_params);
+    gui_params.stackSize = TASKSTACKSIZE;
+    gui_params.stack = &gui_stack;
+    Task_construct(&gui_struct, (Task_FuncPtr)guiRun, &gui_params, NULL);
+}
+
 int main(void)
 {
-    Task_Params gui_params;
-
     /* Call board init functions */
+
     Board_initGeneral();
     // Board_initEMAC();
     Board_initGPIO();
@@ -289,18 +444,20 @@ int main(void)
     // Board_initWiFi();
 
 
-    /* Gui task */
-    Task_Params_init(&gui_params);
-    gui_params.stackSize = TASKSTACKSIZE;
-    gui_params.stack = &gui_stack;
-    Task_construct(&gui_struct, (Task_FuncPtr)guiRun, &gui_params, NULL);
-
     // Set the clocking to run directly from the crystal at 120MHz.
     g_ui32SysClock = SysCtlClockFreqSet((SYSCTL_XTAL_25MHZ | SYSCTL_OSC_MAIN
                      | SYSCTL_USE_PLL |SYSCTL_CFG_VCO_480), 120000000);
 
-    /* Turn on user LED  */
-    GPIO_write(Board_LED0, Board_LED_ON);
+
+    // Setup tasks
+    setup_gui_task();
+
+
+    // Setup Hwis
+    setup_adc_hwi();
+
+    // Setup Swis
+
 
     /* Start BIOS */
     BIOS_start();
