@@ -58,7 +58,7 @@ extern "C" {
 #define Board_LED_OFF               EK_TM4C1294XL_LED_OFF
 #define Board_LED0                  EK_TM4C1294XL_D1
 #define Board_LED1                  EK_TM4C1294XL_D2
-#define Board_LED2                  EK_TM4C1294XL_D2
+#define Board_LED2                  EK_TM4C1294XL_D3
 #define Board_BUTTON0               EK_TM4C1294XL_USR_SW1
 #define Board_BUTTON1               EK_TM4C1294XL_USR_SW2
 #define Board_HALL_A                HALL_A

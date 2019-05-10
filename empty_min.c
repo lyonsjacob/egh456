@@ -66,11 +66,23 @@ Task_Struct tsk0Struct;
 UInt8 tsk0Stack[TASKSTACKSIZE];
 Task_Handle task;
 
-int hall_A = 0;
-int hall_B = 0;
-int hall_C = 0;
+struct motor_control
+{
+    PWM_Handle pwm1;
+    PWM_Handle pwm2;
+    PWM_Handle pwm3;
+    PWM_Handle pwm4;
+    PWM_Handle pwm5;
+    PWM_Handle pwm6;
+    int hall_A;
+    int hall_B;
+    int hall_C;
+    PWM_Params params;
+    uint16_t   pwmPeriod;
+    uint16_t   duty;
+};
 
-
+struct motor_control Motor_Control;
 
 Void HALL_A_HWI(unsigned int index)
 {
@@ -78,9 +90,9 @@ Void HALL_A_HWI(unsigned int index)
     // Clear the asserted interrupts.
     //
     GPIO_clearInt(Board_HALL_A);
-    hall_A =GPIO_read(Board_HALL_A);
-    //hall_A++;
-    //hall_A = hall_A % 2;
+    Motor_Control.hall_A++;
+    Motor_Control.hall_A = Motor_Control.hall_A % 2;
+    GPIO_toggle(Board_LED0);
 }
 
 Void HALL_B_HWI(unsigned int index)
@@ -89,9 +101,9 @@ Void HALL_B_HWI(unsigned int index)
     // Clear the asserted interrupts.
     //
     GPIO_clearInt(Board_HALL_B);
-    hall_B =GPIO_read(Board_HALL_B);
-//    hall_B++;
-//    hall_B = hall_B % 2;
+    Motor_Control.hall_B++;
+    Motor_Control.hall_B = Motor_Control.hall_B % 2;
+    GPIO_toggle(Board_LED1);
 }
 
 Void HALL_C_HWI(unsigned int index)
@@ -100,9 +112,9 @@ Void HALL_C_HWI(unsigned int index)
     // Clear the asserted interrupts.
     //
     GPIO_clearInt(Board_HALL_C);
-    hall_C =GPIO_read(Board_HALL_C);
-//    hall_C++;
-//    hall_C = hall_C % 2;
+    Motor_Control.hall_C++;
+    Motor_Control.hall_C = Motor_Control.hall_C % 2;
+    GPIO_toggle(Board_LED2);
 }
 
 
@@ -113,55 +125,71 @@ Void HALL_C_HWI(unsigned int index)
  */
 Void pwmLEDFxn(UArg arg0, UArg arg1)
 {
-    PWM_Handle pwm1;
-    PWM_Handle pwm2;
-    PWM_Handle pwm3;
-    PWM_Handle pwm4;
-    PWM_Handle pwm5;
-    PWM_Handle pwm6;
-    PWM_Params params;
-    uint16_t   pwmPeriod = 3000;      // Period and duty in microseconds
-    uint16_t   duty = 3000;
+    Motor_Control.pwmPeriod = 3000;      // Period and duty in microseconds
+    Motor_Control.duty = 3000;
 
 
-    PWM_Params_init(&params);
-    params.period = pwmPeriod;
-    pwm1 = PWM_open(Board_PWM0, &params);
-    if (pwm1 == NULL) {
+    PWM_Params_init(&Motor_Control.params);
+    Motor_Control.params.period = Motor_Control.pwmPeriod;
+    Motor_Control.pwm1 = PWM_open(Board_PWM0, &Motor_Control.params);
+    if (Motor_Control.pwm1 == NULL) {
         System_abort("Board_PWM0 did not open");
     }
 
-    pwm2 = PWM_open(Board_PWM1, &params);
-    if (pwm2 == NULL) {
+    Motor_Control.pwm2 = PWM_open(Board_PWM1, &Motor_Control.params);
+    if (Motor_Control.pwm2 == NULL) {
         System_abort("Board_PWM1 did not open");
         }
 
-    pwm3 = PWM_open(Board_PWM2, &params);
-    if (pwm3 == NULL) {
+    Motor_Control.pwm3 = PWM_open(Board_PWM2, &Motor_Control.params);
+    if (Motor_Control.pwm3 == NULL) {
         System_abort("Board_PWM2 did not open");
         }
 
-    pwm4 = PWM_open(Board_PWM3, &params);
-    if (pwm4 == NULL) {
+    Motor_Control.pwm4 = PWM_open(Board_PWM3, &Motor_Control.params);
+    if (Motor_Control.pwm4 == NULL) {
         System_abort("Board_PWM3 did not open");
         }
 
-    pwm5 = PWM_open(Board_PWM4, &params);
-    if (pwm5 == NULL) {
-        System_abort("Board_PWM4 did not open");
-        }
+//    Motor_Control.pwm5 = PWM_open(Board_PWM4, &Motor_Control.params);
+//    if (Motor_Control.pwm5 == NULL) {
+//        System_abort("Board_PWM4 did not open");
+//        }
+//
+//    Motor_Control.pwm6 = PWM_open(Board_PWM5, &Motor_Control.params);
+//    if (Motor_Control.pwm6 == NULL) {
+//        System_abort("Board_PWM5 did not open");
+//        }
 
-    pwm6 = PWM_open(Board_PWM5, &params);
-    if (pwm6 == NULL) {
-        System_abort("Board_PWM5 did not open");
-        }
+    PWM_setDuty(Motor_Control.pwm1, 0);
+    PWM_setDuty(Motor_Control.pwm2, 0);
+    PWM_setDuty(Motor_Control.pwm3, 0);
+    PWM_setDuty(Motor_Control.pwm4, 0);
 
-    PWM_setDuty(pwm1, 0);
-    PWM_setDuty(pwm2, 0);
-    PWM_setDuty(pwm3, 0);
-    PWM_setDuty(pwm4, 1500);
-    PWM_setDuty(pwm5, duty);
-    PWM_setDuty(pwm6, 0);
+    while (1)
+    {
+           if(Motor_Control.hall_A){
+               PWM_setDuty(Motor_Control.pwm4, Motor_Control.duty);
+           }else if(!Motor_Control.hall_A){
+               PWM_setDuty(Motor_Control.pwm4, 0);
+           }
+
+           if(Motor_Control.hall_B){
+               PWM_setDuty(Motor_Control.pwm3, Motor_Control.duty);
+           }else if(!Motor_Control.hall_B){
+               PWM_setDuty(Motor_Control.pwm3, 0);
+           }
+
+           if(Motor_Control.hall_C){
+               PWM_setDuty(Motor_Control.pwm2, Motor_Control.duty);
+           }else if(!Motor_Control.hall_C){
+               PWM_setDuty(Motor_Control.pwm2, 0);
+           }
+    }
+
+
+//    PWM_setDuty(Motor_Control.pwm5, Motor_Control.duty);
+//    PWM_setDuty(Motor_Control.pwm6, 0);
 
     /* Loop forever incrementing the PWM duty */
    /* while (1) {
@@ -241,6 +269,9 @@ int main(void)
 
      /* Turn on user LED */
     GPIO_write(Board_LED0, Board_LED_ON);
+    GPIO_write(Board_LED1, Board_LED_ON);
+    GPIO_write(Board_LED2, Board_LED_ON);
+    GPIO_write(Board_DVR_Enable, Board_LED_ON);
     Task_Params tskParams;
 
     /* SysMin will only print to the console when you call flush or exit */
