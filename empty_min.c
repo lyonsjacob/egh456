@@ -63,7 +63,7 @@ uint32_t g_ui32SysClock;
 
 //GLOBAL VARIABLES
 uint16_t speed,current,acc,temp;
-uint8_t sec,min,hour,day,month,year; //timer vars
+uint8_t sec,min,hour; //timer vars
 
 
 
@@ -163,19 +163,19 @@ tSliderWidget sliders[] = {
                ClrGray, ClrBlack, ClrSilver, ClrWhite, ClrWhite,
                &g_sFontCm14, "0 mps2", 0, 0, OnSliderChange),
    SliderStruct(tabs, sliders+2, 0,
-               &g_sKentec320x240x16_SSD2119, 20, 140, 130, 30, 0, 100, 0,
+               &g_sKentec320x240x16_SSD2119, 20, 140, 130, 30, 800, 1200, 0,
                (SL_STYLE_FILL | SL_STYLE_BACKG_FILL | SL_STYLE_OUTLINE |
                 SL_STYLE_TEXT | SL_STYLE_BACKG_TEXT),
                ClrGray, ClrBlack, ClrSilver, ClrWhite, ClrWhite,
                &g_sFontCm14, "800 mA", 0, 0, OnSliderChange),
    SliderStruct(tabs, sliders+3, 0,
-               &g_sKentec320x240x16_SSD2119, 170, 140, 130, 30, 0, 100, 0,
+               &g_sKentec320x240x16_SSD2119, 170, 140, 130, 30, 30, 60, 0,
                (SL_STYLE_FILL | SL_STYLE_BACKG_FILL | SL_STYLE_OUTLINE |
                 SL_STYLE_TEXT | SL_STYLE_BACKG_TEXT),
                ClrGray, ClrBlack, ClrSilver, ClrWhite, ClrWhite,
                &g_sFontCm14, "30 celsius", 0, 0, OnSliderChange),
     SliderStruct(tabs, &motorControl,0,
-                &g_sKentec320x240x16_SSD2119, 20, 60, 130, 30, 0, 100, 0,
+                &g_sKentec320x240x16_SSD2119, 20, 60, 130, 30, 0, 3000, 0,
                 (SL_STYLE_FILL | SL_STYLE_BACKG_FILL | SL_STYLE_OUTLINE |
                  SL_STYLE_TEXT | SL_STYLE_BACKG_TEXT),
                 ClrGray, ClrBlack, ClrSilver, ClrWhite, ClrWhite,
@@ -210,7 +210,8 @@ void paintMotorControl(tWidget *psWidget, tContext *psContext){
 
 void OnSliderChange(tWidget *psWidget, int32_t i32Value){
 
-    static char pcSliderText[10];
+    static char pcSliderText[10], pcSliderText1[10];
+    static char pcSliderText2[10],pcSliderText3[10];
 
     //Accelerometer changed
     if(psWidget == (tWidget *)&sliders[0]){
@@ -222,25 +223,25 @@ void OnSliderChange(tWidget *psWidget, int32_t i32Value){
 
     //Current changed
     if(psWidget == (tWidget *)&sliders[1]){
-        current = (i32Value+200)*4; // STEPS 10 mA [800 -> 1200]
-        usprintf(pcSliderText, "%d mA", current);
-        SliderTextSet(&sliders[1], pcSliderText);
+        current = i32Value; // STEPS 10 mA [800 -> 1200]
+        usprintf(pcSliderText1, "%d mA", current);
+        SliderTextSet(&sliders[1], pcSliderText1);
         WidgetPaint((tWidget *)&sliders[1]);
     }
 
     //Temp changed
     if(psWidget == (tWidget *)&sliders[2]){
-        temp = (uint16_t)((i32Value+90)/3); // [30 -> 63]
-        usprintf(pcSliderText, "%d celsius", temp);
-        SliderTextSet(&sliders[2], pcSliderText);
+        temp = i32Value;//(uint16_t)((i32Value+90)/3); // [30 -> 63]
+        usprintf(pcSliderText2, "%d celsius", temp);
+        SliderTextSet(&sliders[2], pcSliderText2);
         WidgetPaint((tWidget *)&sliders[2]);
     }
 
     //Speed changed
     if(psWidget == (tWidget *)&sliders[3]){
-        speed = i32Value*30; // STEPS OF 30 RPM [0 -> 3000]
-        usprintf(pcSliderText, "%d rpm", speed);
-        SliderTextSet(&sliders[3], pcSliderText);
+        speed = i32Value; // STEPS OF 30 RPM [0 -> 3000]
+        usprintf(pcSliderText3, "%d rpm", speed);
+        SliderTextSet(&sliders[3], pcSliderText3);
         WidgetPaint((tWidget *)&sliders[3]);
     }
 }
