@@ -130,10 +130,11 @@ RectangularButton(stopButton, 0, 0, 0, &g_sKentec320x240x16_SSD2119, 110, 190,
                   ClrDarkSalmon, ClrWhite, ClrWhite, &g_sFontCm20, "Stop", 0,
                   0, 0, 0, stopMotor);
 //TITLE OF PANEL
-char * namesOfPanels[] = {"  Motor Control  ", "  Motor Analytics  " };
+char * namesOfPanels[] = {"  Motor Control  ", "  Power Usage  ","  Light Level  ", "  Motor Temperature  ","  Acceleration  ","  Motor Speed  "};
 Canvas(titleNames, 0, 0, 0, &g_sKentec320x240x16_SSD2119, 70, 0, 200, 30,
        CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_OPAQUE, 0, 0, ClrWhite,
        &g_sFontCm20, 0, 0, 0);
+int NUM_PANELS = 6;
 
 //DAY OR NIGHT FUNCTIONALITY
 char * dayOrNightNames[] = { "Day", "Night" };
@@ -211,7 +212,7 @@ void paintMotorControl(tWidget *psWidget, tContext *psContext){
 void OnSliderChange(tWidget *psWidget, int32_t i32Value){
 
     static char pcSliderText[10], pcSliderText1[10];
-    static char pcSliderText2[10],pcSliderText3[10];
+    static char pcSliderText2[10], pcSliderText3[10];
 
     //Accelerometer changed
     if(psWidget == (tWidget *)&sliders[0]){
@@ -277,16 +278,20 @@ void onNext(){
     WidgetPaint((tWidget *)&titleNames);
 
 
-    //DISPLAYING OF THE BUTTONS
-    PushButtonImageOff(&nextButton);
-    PushButtonTextOff(&nextButton);
-    PushButtonFillOn(&nextButton);
-    WidgetPaint((tWidget *)&nextButton);
+    if(tabs == 1){
+        //DISPLAYING OF THE BUTTONS
+        PushButtonImageOff(&nextButton);
+        PushButtonTextOff(&nextButton);
+        PushButtonFillOn(&nextButton);
+        WidgetPaint((tWidget *)&nextButton);
+    }
 
-    PushButtonImageOn(&backButton);
-    PushButtonTextOn(&backButton);
-    PushButtonFillOff(&backButton);
-    WidgetPaint((tWidget *)&backButton);
+    if(tabs == (NUM_PANELS - 1)){
+        PushButtonImageOn(&backButton);
+        PushButtonTextOn(&backButton);
+        PushButtonFillOff(&backButton);
+        WidgetPaint((tWidget *)&backButton);
+    }
 }
 
 void onBack(){
@@ -303,16 +308,20 @@ void onBack(){
     CanvasTextSet(&titleNames, namesOfPanels[disp_tab]);
     WidgetPaint((tWidget *)&titleNames);
 
-    //DISPLAYING OF THE BUTTONS
-    PushButtonImageOff(&backButton);
-    PushButtonTextOff(&backButton);
-    PushButtonFillOn(&backButton);
-    WidgetPaint((tWidget *)&backButton);
+    if(tabs == 0){
+        //DISPLAYING OF THE BUTTONS
+        PushButtonImageOff(&backButton);
+        PushButtonTextOff(&backButton);
+        PushButtonFillOn(&backButton);
+        WidgetPaint((tWidget *)&backButton);
+    }
 
-    PushButtonImageOn(&nextButton);
-    PushButtonTextOn(&nextButton);
-    PushButtonFillOff(&nextButton);
-    WidgetPaint((tWidget *)&nextButton);
+    if(tabs == (NUM_PANELS - 2)){
+        PushButtonImageOn(&nextButton);
+        PushButtonTextOn(&nextButton);
+        PushButtonFillOff(&nextButton);
+        WidgetPaint((tWidget *)&nextButton);
+    }
 }
 
 void changeDisplayToNight(){
