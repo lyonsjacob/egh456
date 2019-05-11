@@ -45,7 +45,7 @@
 	<variableList>
 		<variable>
 			<name>SW_ROOT</name>
-			<value>$%7BTI_PRODUCTS_DIR%7D/tivaware_c_series_2_1_4_178</value>
+			<value>$%7BPARENT-1-XDC_CG_ROOT%7D/tivaware_c_series_2_1_4_178</value>
 		</variable>
 	</variableList>
 </projectDescription>
