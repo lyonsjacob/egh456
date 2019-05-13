@@ -21,6 +21,10 @@ void changeDisplayToDay();
 //init widgets
 void GUI_init();
 
+//set time, get time, display time
+void DateTimeDefaultSet(int setHour, int setMin);
+bool DateTimeDisplayGet();
+void run_timer();
 
 
 #endif /* GUI_H_ */

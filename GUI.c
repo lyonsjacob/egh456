@@ -13,16 +13,80 @@
 #include "grlib/pushbutton.h"
 #include "grlib/container.h"
 
+#include "driverlib/hibernate.h"
+#include "inc/hw_hibernate.h"
+
+
 uint16_t speed,current,acc,temp;    // user set vars
-uint8_t sec,min,hour;               // timer vars
+uint32_t sec,min,hour;               // timer vars
 uint32_t disp_tab;                  // which tab
+char *pcBuf;
 
 extern tCanvasWidget tabs[];
 void paintMotorControl(tWidget *psWidget, tContext *psContext);
 void paintGraph(tWidget *psWidget, tContext *psContext);
 void OnSliderChange(tWidget *psWidget, int32_t i32Value);
 void startMotor(), stopMotor(), onNext(), onBack();
+void changeDisplayDate();
 
+
+
+/* - - - - - - CALANDER TIME - - - - - - */
+bool DateTimeGet(struct tm *sTime){
+
+    HibernateCalendarGet(sTime);
+
+    if(((sTime->tm_sec < 0) || (sTime->tm_sec > 59)) ||
+       ((sTime->tm_min < 0) || (sTime->tm_min > 59)) ||
+       ((sTime->tm_hour < 0) || (sTime->tm_hour > 23)) ||
+       ((sTime->tm_mday < 1) || (sTime->tm_mday > 31)) ||
+       ((sTime->tm_mon < 0) || (sTime->tm_mon > 11)) ||
+       ((sTime->tm_year < 100) || (sTime->tm_year > 199)))
+    {
+        return false;
+    }
+
+    return true;
+}
+
+// SET THE TIME HERE
+void DateTimeDefaultSet(int setHour, int setMin){
+    min = setMin;
+    hour = setHour;
+
+    struct tm sTime;
+
+    HibernateCalendarGet(&sTime);
+
+    sTime.tm_hour = hour;
+    sTime.tm_min = min;
+
+    HibernateCalendarSet(&sTime);
+}
+
+bool DateTimeDisplayGet(){
+    static uint32_t ui32SecondsPrev = 0xFF;
+    struct tm sTime;
+
+    if(DateTimeGet(&sTime) == false) return false;
+
+    if(ui32SecondsPrev == sTime.tm_sec) return false;
+
+    ui32SecondsPrev = sTime.tm_sec;
+
+    hour = sTime.tm_hour;
+    min = sTime.tm_min;
+    sec = sTime.tm_sec;
+
+    return true;
+}
+
+void run_timer(){
+    changeDisplayDate();
+}
+
+
+/* - - - - - GUI FUNCTIONALITY - - - - - */
 
 Canvas(powerUsage, tabs+1, 0, 0, &g_sKentec320x240x16_SSD2119, 0,
        30, 320, 160, CANVAS_STYLE_APP_DRAWN, 0, 0, 0, 0, 0, 0, paintGraph);
@@ -279,6 +343,7 @@ void changeDisplayDate(){
     static char timer[10];
     usprintf(timer, "%02d:%02d:%02d",hour,min,sec);
     CanvasTextSet(&dispTime, timer);
+    WidgetPaint((tWidget *)&dispTime);
 }
 /* - - - - - END GUI FUNCTIONALITY - - - - - - */
 

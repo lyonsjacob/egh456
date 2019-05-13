@@ -46,6 +46,8 @@
 #include "driverlib/udma.h"
 #include "driverlib/fpu.h"
 
+#include "driverlib/hibernate.h"
+#include "inc/hw_hibernate.h"
 
 // Our header files:
 #include "GUI.h"
@@ -72,7 +74,7 @@ tDMAControlTable psDMAControlTable[64] __attribute__ ((aligned(1024)));
 // GUI Task Function
 Void guiRun() {
     tContext sContext;
-
+    bool bUpdate;
 
     FPUEnable();
     FPULazyStackingEnable();
@@ -89,10 +91,22 @@ Void guiRun() {
     TouchScreenInit(g_ui32SysClock);
     TouchScreenCallbackSet(WidgetPointerMessage);
 
+    //set up clock
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_HIBERNATE);
+    HibernateEnableExpClk(g_ui32SysClock);
+    HibernateRTCEnable();
+    HibernateCounterMode(HIBERNATE_COUNTER_24HR);
+
+    /***** SET YOUR TIME HERE ******/
+    DateTimeDefaultSet(10, 30);
+    /***** ****************** ******/
+
     // gui functionality
     GUI_init();
 
     while (1) {
+        bUpdate = DateTimeDisplayGet();
+        if(bUpdate) run_timer();
         WidgetMessageQueueProcess();
     }
 }
