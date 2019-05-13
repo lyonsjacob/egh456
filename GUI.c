@@ -16,11 +16,14 @@
 #include "driverlib/hibernate.h"
 #include "inc/hw_hibernate.h"
 
+#include "main.h"
+
+
+
 
 uint16_t speed,current,acc,temp;    // user set vars
-uint32_t sec,min,hour;               // timer vars
+uint32_t sec,min,hour;              // timer vars
 uint32_t disp_tab;                  // which tab
-char *pcBuf;
 
 extern tCanvasWidget tabs[];
 void paintMotorControl(tWidget *psWidget, tContext *psContext);
@@ -38,10 +41,7 @@ bool DateTimeGet(struct tm *sTime){
 
     if(((sTime->tm_sec < 0) || (sTime->tm_sec > 59)) ||
        ((sTime->tm_min < 0) || (sTime->tm_min > 59)) ||
-       ((sTime->tm_hour < 0) || (sTime->tm_hour > 23)) ||
-       ((sTime->tm_mday < 1) || (sTime->tm_mday > 31)) ||
-       ((sTime->tm_mon < 0) || (sTime->tm_mon > 11)) ||
-       ((sTime->tm_year < 100) || (sTime->tm_year > 199)))
+       ((sTime->tm_hour < 0) || (sTime->tm_hour > 23)))
     {
         return false;
     }
@@ -255,7 +255,7 @@ void OnSliderChange(tWidget *psWidget, int32_t i32Value){
 }
 
 void startMotor(){
-    //GPIO_write(Board_LED0, Board_LED_ON);
+    toggleLight(0,1);
 
     WidgetRemove((tWidget *)&startButton);
     WidgetAdd(WIDGET_ROOT, (tWidget *)&stopButton);
@@ -263,7 +263,7 @@ void startMotor(){
 }
 
 void stopMotor(){
-    //GPIO_write(Board_LED0, Board_LED_OFF);
+    toggleLight(0,0);
 
     WidgetRemove((tWidget *)&stopButton);
     WidgetAdd(WIDGET_ROOT, (tWidget *)&startButton);
@@ -330,13 +330,16 @@ void onBack(){
 }
 
 void changeDisplayToNight(){
+    toggleLight(1,1);
+
     CanvasTextSet(&dayOrNight, dayOrNightNames[1]);
-    //GPIO_write(Board_LED1, Board_LED_ON);
+    WidgetPaint((tWidget *)&dayOrNight);
 }
 
 void changeDisplayToDay(){
+    toggleLight(1,0);
     CanvasTextSet(&dayOrNight, dayOrNightNames[0]);
-    //GPIO_write(Board_LED1, Board_LED_OFF);
+    WidgetPaint((tWidget *)&dayOrNight);
 }
 
 void changeDisplayDate(){

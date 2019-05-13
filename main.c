@@ -70,6 +70,14 @@ tDMAControlTable psDMAControlTable[64] __attribute__ ((aligned(1024)));
 #endif
 
 
+// TOGGLE GPIO LIGHTS // off = 0 on = 1
+void toggleLight(int light, int tog){
+
+    if(light==0) GPIO_write(Board_LED0, tog);
+    if(light==1) GPIO_write(Board_LED1, tog);
+
+    // add lights here if needed
+}
 
 // GUI Task Function
 Void guiRun() {
