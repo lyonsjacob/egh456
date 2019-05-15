@@ -105,9 +105,11 @@ Void guiRun() {
     HibernateRTCEnable();
     HibernateCounterMode(HIBERNATE_COUNTER_24HR);
 
-    /***** SET YOUR TIME HERE ******/
+    /*******************************/
+    /* SET YOUR CALANDER TIME HERE */
     DateTimeDefaultSet(10, 30);
-    /***** ****************** ******/
+    /*******************************/
+    /*******************************/
 
     // gui functionality
     GUI_init();
@@ -171,6 +173,7 @@ int main(void)
 
     // Setup Hwis
     setup_adc_hwi();
+
 
     // Setup Swis
 

@@ -88,8 +88,10 @@ void run_timer(){
 
 /* - - - - - GUI FUNCTIONALITY - - - - - */
 
-Canvas(powerUsage, tabs+1, 0, 0, &g_sKentec320x240x16_SSD2119, 0,
+
+Canvas(analytics, tabs+1, 0, 0, &g_sKentec320x240x16_SSD2119, 0,
        30, 320, 160, CANVAS_STYLE_APP_DRAWN, 0, 0, 0, 0, 0, 0, paintGraph);
+/*
 Canvas(lightLevel, tabs+2, 0, 0, &g_sKentec320x240x16_SSD2119, 0,
        30, 320, 160, CANVAS_STYLE_APP_DRAWN, 0, 0, 0, 0, 0, 0, paintGraph);
 Canvas(motorTemp, tabs+3, 0, 0, &g_sKentec320x240x16_SSD2119, 0,
@@ -98,6 +100,7 @@ Canvas(accelData, tabs+4, 0, 0, &g_sKentec320x240x16_SSD2119, 0,
        30, 320, 160, CANVAS_STYLE_APP_DRAWN, 0, 0, 0, 0, 0, 0, paintGraph);
 Canvas(motorSpeed, tabs+5, 0, 0, &g_sKentec320x240x16_SSD2119, 0,
        30, 320, 160, CANVAS_STYLE_APP_DRAWN, 0, 0, 0, 0, 0, 0, paintGraph);
+ */
 
 //*****************************************************************************
 //
@@ -126,12 +129,13 @@ RectangularButton(stopButton, 0, 0, 0, &g_sKentec320x240x16_SSD2119, 110, 190,
                   ClrDarkSalmon, ClrWhite, ClrWhite, &g_sFontCm20, "Stop", 0,
                   0, 0, 0, stopMotor);
 //TITLE OF PANEL
-char * namesOfPanels[] = {"    Motor Control    ","    Power Usage     ","    Light Level    ",
-                          "  Motor Temperature  ","   Accelerometer    ","    Motor Speed    "};
+int NUM_PANELS = 2;
+
+char * namesOfPanels[] = {"    Motor Control    ","    Motor Analytics     "/*,"    Light Level    ",
+                          "  Motor Temperature  ","   Accelerometer    ","    Motor Speed    "*/};
 Canvas(titleNames, 0, 0, 0, &g_sKentec320x240x16_SSD2119, 70, 0, 200, 30,
        CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_OPAQUE, 0, 0, ClrWhite,
        &g_sFontCm20, 0, 0, 0);
-int NUM_PANELS = 6;
 
 //DAY OR NIGHT FUNCTIONALITY
 char * dayOrNightNames[] = { "Day", "Night" };
@@ -183,16 +187,16 @@ tSliderWidget sliders[] = {
 tCanvasWidget tabs[] = {
         CanvasStruct(0, 0, sliders, &g_sKentec320x240x16_SSD2119, 0,
                      30, 320, 160, CANVAS_STYLE_FILL, ClrBlack, 0, 0, 0, 0, 0, 0),
-        CanvasStruct(0, 0, &powerUsage, &g_sKentec320x240x16_SSD2119, 0, 30,
+        CanvasStruct(0, 0, &analytics, &g_sKentec320x240x16_SSD2119, 0, 30,
                      320, 160, CANVAS_STYLE_FILL, ClrBlack, 0, 0, 0, 0, 0, 0),
-        CanvasStruct(0, 0, &lightLevel, &g_sKentec320x240x16_SSD2119, 0, 30,
+        /*CanvasStruct(0, 0, &lightLevel, &g_sKentec320x240x16_SSD2119, 0, 30,
                      320, 160, CANVAS_STYLE_FILL, ClrBlack, 0, 0, 0, 0, 0, 0),
         CanvasStruct(0, 0, &motorTemp, &g_sKentec320x240x16_SSD2119, 0, 30,
                      320, 160, CANVAS_STYLE_FILL, ClrBlack, 0, 0, 0, 0, 0, 0),
         CanvasStruct(0, 0, &accelData, &g_sKentec320x240x16_SSD2119, 0, 30,
                      320, 160, CANVAS_STYLE_FILL, ClrBlack, 0, 0, 0, 0, 0, 0),
         CanvasStruct(0, 0, &motorSpeed, &g_sKentec320x240x16_SSD2119, 0, 30,
-                     320, 160, CANVAS_STYLE_FILL, ClrBlack, 0, 0, 0, 0, 0, 0),
+                     320, 160, CANVAS_STYLE_FILL, ClrBlack, 0, 0, 0, 0, 0, 0),*/
 };
 
 
@@ -376,7 +380,6 @@ void GUI_init(){
 }
 
 //get set variables
-int getUserSetSpeed()           {   return  speed;      }
 int getUserSetAccelerometer()   {   return  acc;        }
 int getUserSetCurrent()         {   return  current;    }
 int getUserSetTemperature()     {   return  temp;       }

@@ -9,7 +9,6 @@
 #define GUI_H_
 
 //user set variables
-int getUserSetSpeed();
 int getUserSetAccelerometer();
 int getUserSetCurrent();
 int getUserSetTemperature();
