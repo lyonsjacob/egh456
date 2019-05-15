@@ -44,17 +44,10 @@
 #include <xdc/runtime/System.h>
 
 /* TI-RTOS Header files */
-// #include <ti/drivers/EMAC.h>
 #include <ti/drivers/GPIO.h>
 #include <ti/sysbios/hal/Hwi.h>
 #include <ti/drivers/PWM.h>
-// #include <ti/drivers/I2C.h>
-// #include <ti/drivers/SDSPI.h>
-// #include <ti/drivers/SPI.h>
-// #include <ti/drivers/UART.h>
-// #include <ti/drivers/USBMSCHFatFs.h>
-// #include <ti/drivers/Watchdog.h>
-// #include <ti/drivers/WiFi.h>
+
 
 /* Board Header file */
 #include "Board.h"
@@ -64,11 +57,6 @@
 struct motor_control
 {
     PWM_Handle pwm1;
-    PWM_Handle pwm2;
-    PWM_Handle pwm3;
-    PWM_Handle pwm4;
-    PWM_Handle pwm5;
-    PWM_Handle pwm6;
     int hall_A;
     int hall_B;
     int hall_C;
@@ -86,16 +74,13 @@ Void HALL_A_HWI(unsigned int index)
     // Clear the asserted interrupts.
     //
     GPIO_clearInt(Board_HALL_A);
-    Motor_Control.hall_A++;
-    Motor_Control.hall_A = Motor_Control.hall_A % 2;
-
-    if(Motor_Control.hall_A){
-        PWM_setDuty(Motor_Control.pwm4, Motor_Control.duty);
-    }else if(!Motor_Control.hall_A){
-        PWM_setDuty(Motor_Control.pwm4, 0);
+    if(GPIO_read(Board_HALL_A)){
+        GPIO_write(Board_STATE0, Board_ON);
+        GPIO_write(Board_LED0, Board_ON);
+    }else{
+        GPIO_write(Board_STATE0, Board_OFF);
+        GPIO_write(Board_LED0, Board_ON);
     }
-
-    GPIO_toggle(Board_LED0);
 }
 
 Void HALL_B_HWI(unsigned int index)
@@ -104,15 +89,14 @@ Void HALL_B_HWI(unsigned int index)
     // Clear the asserted interrupts.
     //
     GPIO_clearInt(Board_HALL_B);
-    Motor_Control.hall_B++;
-    Motor_Control.hall_B = Motor_Control.hall_B % 2;
-
-    if(Motor_Control.hall_B){
-        PWM_setDuty(Motor_Control.pwm3, Motor_Control.duty);
-    }else if(!Motor_Control.hall_B){
-        PWM_setDuty(Motor_Control.pwm3, 0);
+    if(GPIO_read(Board_HALL_B)){
+        GPIO_write(Board_STATE1, Board_ON);
+        GPIO_write(Board_LED1, Board_ON);
+    }else{
+        GPIO_write(Board_STATE1, Board_OFF);
+        GPIO_write(Board_LED1, Board_ON);
     }
-    GPIO_toggle(Board_LED1);
+
 }
 
 Void HALL_C_HWI(unsigned int index)
@@ -121,19 +105,15 @@ Void HALL_C_HWI(unsigned int index)
     // Clear the asserted interrupts.
     //
     GPIO_clearInt(Board_HALL_C);
-    Motor_Control.hall_C++;
-    Motor_Control.hall_C = Motor_Control.hall_C % 2;
-
-    if(Motor_Control.hall_C){
-        PWM_setDuty(Motor_Control.pwm2, Motor_Control.duty);
-    }else if(!Motor_Control.hall_C){
-        PWM_setDuty(Motor_Control.pwm2, 0);
+    if(GPIO_read(Board_HALL_C)){
+        GPIO_write(Board_STATE2, Board_ON);
+        GPIO_write(Board_LED2, Board_ON);
+    }else{
+        GPIO_write(Board_STATE2, Board_OFF);
+        GPIO_write(Board_LED2, Board_ON);
     }
-    GPIO_toggle(Board_LED2);
+
 }
-
-
-
 
 
 
@@ -144,30 +124,16 @@ int main(void)
 {
     /* Call board init functions */
     Board_initGeneral();
-    // Board_initEMAC();
     Board_initGPIO();
     Board_initPWM();
-    // Board_initI2C();
-    // Board_initSDSPI();
-    // Board_initSPI();
-    // Board_initUART();
-    // Board_initUSB(Board_USBDEVICE);
-    // Board_initUSBMSCHFatFs();
-    // Board_initWatchdog();
-    // Board_initWiFi();
 
-
-     /* Turn on user LED */
-    GPIO_write(Board_LED0, Board_LED_ON);
-    GPIO_write(Board_LED1, Board_LED_ON);
-    GPIO_write(Board_LED2, Board_LED_ON);
-
-    /* turn motor driver hardware on*/
-    GPIO_write(Board_DVR_Enable, Board_LED_ON);
+    /* Turn on user LED */
+    GPIO_write(Board_LED0, Board_ON);
+    GPIO_write(Board_LED1, Board_ON);
+    GPIO_write(Board_LED2, Board_ON);
 
     /* SysMin will only print to the console when you call flush or exit */
     System_flush();
-
 
     /* install Button callback HALL A, B and C callback */
     GPIO_setCallback(Board_HALL_A, HALL_A_HWI);
@@ -180,7 +146,7 @@ int main(void)
     GPIO_enableInt(Board_HALL_C);
 
     Motor_Control.pwmPeriod = 3000;      // Period and duty in microseconds
-    Motor_Control.duty = 3000;          // set motor speed
+    Motor_Control.duty = 200;          // set motor speed
 
     /* Setup PWM for motors*/
     PWM_Params_init(&Motor_Control.params);
@@ -190,25 +156,16 @@ int main(void)
         System_abort("Board_PWM0 did not open");
     }
 
-    Motor_Control.pwm2 = PWM_open(Board_PWM1, &Motor_Control.params);
-    if (Motor_Control.pwm2 == NULL) {
-        System_abort("Board_PWM1 did not open");
-        }
+    /* turn motor driver hardware on*/
+    GPIO_write(Board_DVR_Enable, Board_ON);
 
-    Motor_Control.pwm3 = PWM_open(Board_PWM2, &Motor_Control.params);
-    if (Motor_Control.pwm3 == NULL) {
-        System_abort("Board_PWM2 did not open");
-        }
-
-    Motor_Control.pwm4 = PWM_open(Board_PWM3, &Motor_Control.params);
-    if (Motor_Control.pwm4 == NULL) {
-        System_abort("Board_PWM3 did not open");
-        }
     /*set Motor speed too 0*/
-    PWM_setDuty(Motor_Control.pwm1, 0);
-    PWM_setDuty(Motor_Control.pwm2, 0);
-    PWM_setDuty(Motor_Control.pwm3, 0);
-    PWM_setDuty(Motor_Control.pwm4, 0);
+    PWM_setDuty(Motor_Control.pwm1, Motor_Control.duty);
+
+    /*turn brake off*/
+    GPIO_write(Board_BRAKE, Board_ON);
+    /*set direction*/
+    GPIO_write(Board_DIRECTION, Board_ON);
 
     /* Start BIOS */
     BIOS_start();

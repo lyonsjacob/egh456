@@ -54,8 +54,8 @@ extern "C" {
 #define Board_initWatchdog          EK_TM4C1294XL_initWatchdog
 #define Board_initWiFi              EK_TM4C1294XL_initWiFi
 
-#define Board_LED_ON                EK_TM4C1294XL_LED_ON
-#define Board_LED_OFF               EK_TM4C1294XL_LED_OFF
+#define Board_ON                    EK_TM4C1294XL_LED_ON
+#define Board_OFF                   EK_TM4C1294XL_LED_OFF
 #define Board_LED0                  EK_TM4C1294XL_D1
 #define Board_LED1                  EK_TM4C1294XL_D2
 #define Board_LED2                  EK_TM4C1294XL_D3
@@ -73,11 +73,11 @@ extern "C" {
 #define Board_I2C_TPL0401           EK_TM4C1294XL_I2C7
 
 #define Board_PWM0                  EK_TM4C1294XL_PWM1
-#define Board_PWM1                  EK_TM4C1294XL_PWM2
-#define Board_PWM2                  EK_TM4C1294XL_PWM3
-#define Board_PWM3                  EK_TM4C1294XL_PWM4
-#define Board_PWM4                  EK_TM4C1294XL_CCP0
-#define Board_PWM5                  EK_TM4C1294XL_CCP1
+#define Board_STATE0                STATE0
+#define Board_STATE1                STATE1
+#define Board_STATE2                STATE2
+#define Board_DIRECTION             DIRECTION
+#define Board_BRAKE                 BRAKE
 
 #define Board_SDSPI0                EK_TM4C1294XL_SDSPI0
 #define Board_SDSPI1                EK_TM4C1294XL_SDSPI1
