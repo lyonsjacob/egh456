@@ -33,10 +33,10 @@
 #include "driverlib/debug.h"
 #include "driverlib/gpio.h"
 #include "driverlib/interrupt.h"
-//#include "driverlib/pin_map.h"
+#include "driverlib/pin_map.h"
 //#include "driverlib/rom.h"
 //#include "driverlib/rom_map.h"
-//#include "driverlib/uart.h"
+#include "driverlib/uart.h"
 
 // GRLIB FILES
 #include "grlib/grlib.h"
@@ -48,6 +48,11 @@
 
 #include "driverlib/hibernate.h"
 #include "inc/hw_hibernate.h"
+
+// UART extra FILES
+#include "inc/hw_ints.h"
+#include "driverlib/debug.h"
+#include "driverlib/gpio.h"
 
 // Our header files:
 #include "GUI.h"
