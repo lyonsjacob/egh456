@@ -90,8 +90,9 @@ Void taskFxn(UArg arg0, UArg arg1)
     i2cTransaction.readCount = 0;
 
     if (!I2C_transfer(i2c, &i2cTransaction)) {
-        System_printf("No\n");
+        System_abort("Error Initializing Transaction\n");
     }
+    System_abort("Transaction Initializing I2C\n");
 
     txBuffer[0] = 0x01;
     i2cTransaction.slaveAddress = Board_OPT3001_ADDR;
@@ -103,7 +104,7 @@ Void taskFxn(UArg arg0, UArg arg1)
     /* Take 20 samples and print them out onto the console */
     for (i = 0; i < 20; i++) {
         if (I2C_transfer(i2c, &i2cTransaction)) {
-            System_printf("%d\n", rxBuffer);
+            success =
         }
         else {
             System_printf("I2C Bus fault\n");
