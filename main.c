@@ -61,6 +61,9 @@
 
 uint32_t g_ui32SysClock;
 
+// Hwi Interrupts
+Hwi_Handle myHwi;
+
 Task_Struct gui_struct;
 Char gui_stack[TASKSTACKSIZE];
 
@@ -83,6 +86,10 @@ void toggleLight(int light, int tog){
 
     // add lights here if needed
 }
+
+/*
+ *  ======== Tasks ========
+ */
 
 // GUI Task Function
 Void guiRun() {
@@ -123,6 +130,39 @@ Void guiRun() {
         bUpdate = DateTimeDisplayGet();
         if(bUpdate) run_timer();
         WidgetMessageQueueProcess();
+    }
+}
+
+/*
+ *  ======== Hwi ========
+ */
+
+void motorTempHwi() {
+    uint32_t ui32Status;
+
+    //
+    // Get the interrrupt status.
+    //
+    ui32Status = UARTIntStatus(UART7_BASE, true);
+
+    //
+    // Clear the asserted interrupts.
+    //
+    UARTIntClear(UART7_BASE, ui32Status);
+
+    //
+    // Loop while there are characters in the receive FIFO.
+    //
+    char rec_char;
+    while(UARTCharsAvail(UART7_BASE))
+    {
+        //
+        // Read the next character from the UART and write it back to the UART.
+        //
+
+        rec_char = (char)UARTCharGetNonBlocking(UART7_BASE);
+
+        UARTCharPutNonBlocking(UART0_BASE, rec_char);
     }
 }
 
@@ -182,6 +222,52 @@ int main(void)
 
     // Setup Swis
 
+    // ----- Setup UART (for printing data)
+    // Setup hardware Hwi
+    Hwi_Params hwiParams;
+    Error_Block hwi_eb;
+    Error_init(&hwi_eb);
+
+    Hwi_Params_init(&hwiParams);
+    int id = INT_UART7_TM4C123;
+    myHwi = Hwi_create(id, (Hwi_FuncPtr)motorTempHwi, &hwiParams, &hwi_eb);
+
+    if (myHwi == NULL) System_abort("Hwi create failed");
+
+    // Enable the peripherals used by this example.
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
+
+    // Set GPIO A0 and A1 as UART pins.
+    GPIOPinConfigure(GPIO_PA0_U0RX);
+    GPIOPinConfigure(GPIO_PA1_U0TX);
+    GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
+
+    // Configure the UART for 115,200, 8-N-1 operation.
+    UARTConfigSetExpClk(UART0_BASE, g_ui32SysClock, 115200,
+                           (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE |
+                            UART_CONFIG_PAR_NONE));
+
+    UARTCharPutNonBlocking(UART0_BASE, 'y');
+
+    // ---- Setup UART (for reading motor temp)
+    // Enable peripherals
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_UART7);
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
+
+    // Set UART pins
+    GPIOPinConfigure(GPIO_PC4_U7RX);
+    GPIOPinConfigure(GPIO_PC5_U7TX);
+    GPIOPinTypeUART(GPIO_PORTC_BASE, GPIO_PIN_4 | GPIO_PIN_5);
+
+    // Configure the UART for 115,200, 8-N-1 operation.
+    UARTConfigSetExpClk(UART7_BASE, g_ui32SysClock, 115200,
+                           (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE |
+                            UART_CONFIG_PAR_NONE));
+
+    // Enable the UART interrupt.
+    IntEnable(INT_UART7);
+    UARTIntEnable(UART7_BASE, UART_INT_RX | UART_INT_RT);
 
     /* Start BIOS */
     BIOS_start();
