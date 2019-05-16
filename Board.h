@@ -39,6 +39,8 @@ extern "C" {
 
 #include "EK_TM4C1294XL.h"
 
+
+
 #define Board_initEMAC              EK_TM4C1294XL_initEMAC
 #define Board_initGeneral           EK_TM4C1294XL_initGeneral
 #define Board_initGPIO              EK_TM4C1294XL_initGPIO
@@ -52,13 +54,17 @@ extern "C" {
 #define Board_initWatchdog          EK_TM4C1294XL_initWatchdog
 #define Board_initWiFi              EK_TM4C1294XL_initWiFi
 
-#define Board_LED_ON                EK_TM4C1294XL_LED_ON
-#define Board_LED_OFF               EK_TM4C1294XL_LED_OFF
+#define Board_ON                    EK_TM4C1294XL_LED_ON
+#define Board_OFF                   EK_TM4C1294XL_LED_OFF
 #define Board_LED0                  EK_TM4C1294XL_D1
 #define Board_LED1                  EK_TM4C1294XL_D2
-#define Board_LED2                  EK_TM4C1294XL_D2
+#define Board_LED2                  EK_TM4C1294XL_D3
 #define Board_BUTTON0               EK_TM4C1294XL_USR_SW1
 #define Board_BUTTON1               EK_TM4C1294XL_USR_SW2
+#define Board_HALL_A                HALL_A
+#define Board_HALL_B                HALL_B
+#define Board_HALL_C                HALL_C
+#define Board_DVR_Enable            DVR_Enable
 
 #define Board_I2C0                  EK_TM4C1294XL_I2C7
 #define Board_I2C1                  EK_TM4C1294XL_I2C8
@@ -66,8 +72,12 @@ extern "C" {
 #define Board_I2C_NFC               EK_TM4C1294XL_I2C7
 #define Board_I2C_TPL0401           EK_TM4C1294XL_I2C7
 
-#define Board_PWM0                  EK_TM4C1294XL_PWM0
-#define Board_PWM1                  EK_TM4C1294XL_PWM0
+#define Board_PWM0                  EK_TM4C1294XL_PWM1
+#define Board_STATE0                STATE0
+#define Board_STATE1                STATE1
+#define Board_STATE2                STATE2
+#define Board_DIRECTION             DIRECTION
+#define Board_BRAKE                 BRAKE
 
 #define Board_SDSPI0                EK_TM4C1294XL_SDSPI0
 #define Board_SDSPI1                EK_TM4C1294XL_SDSPI1
