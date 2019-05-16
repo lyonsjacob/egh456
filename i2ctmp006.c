@@ -33,6 +33,9 @@
 /*
  *    ======== i2ctmp006.c ========
  */
+#include <stdio.h>
+#include <math.h>
+#include <stdbool.h>
 
 /* XDCtools Header files */
 #include <xdc/std.h>
@@ -49,10 +52,20 @@
 /* Example/Board Header files */
 #include "Board.h"
 
-#define TASKSTACKSIZE       640
+#define TASKSTACKSIZE       2048
 
 Task_Struct task0Struct;
 Char task0Stack[TASKSTACKSIZE];
+
+// ----------------------- Constants -----------------------
+
+
+// Register addresses
+#define REG_RESULT                      0x00
+#define REG_CONFIGURATION               0x01
+
+// Bit values
+#define DATA_RDY_BIT                    0x0080  // Data ready
 
 /*
  *  ======== taskFxn ========
@@ -60,7 +73,6 @@ Char task0Stack[TASKSTACKSIZE];
  */
 Void taskFxn(UArg arg0, UArg arg1)
 {
-    unsigned int    i;
     uint16_t        lux;
     uint8_t         txBuffer[3];
     uint8_t         rxBuffer[2];
@@ -79,39 +91,46 @@ Void taskFxn(UArg arg0, UArg arg1)
         System_printf("I2C Initialized!\n");
     }
 
-    /* Point to the T ambient register and read its 2 bytes */
-    txBuffer[0] = 0x01;
-    txBuffer[1] = 0xC4;
-    txBuffer[2] = 0x10;
-    i2cTransaction.slaveAddress = Board_OPT3001_ADDR;
-    i2cTransaction.writeBuf = txBuffer;
-    i2cTransaction.writeCount = 3;
-    i2cTransaction.readBuf = NULL;
-    i2cTransaction.readCount = 0;
+//    /* Point to the T ambient register and read its 2 bytes */
+//    txBuffer[0] = REG_CONFIGURATION;
+//    txBuffer[1] = 0xC4;
+//    txBuffer[2] = 0x10;
+//    i2cTransaction.slaveAddress = Board_OPT3001_ADDR;
+//    i2cTransaction.writeBuf = txBuffer;
+//    i2cTransaction.writeCount = 3;
+//    i2cTransaction.readBuf = NULL;
+//    i2cTransaction.readCount = 0;
+//
+//    if (!I2C_transfer(i2c, &i2cTransaction)) {
+//        System_printf("No\n");
+//    }
 
-    if (!I2C_transfer(i2c, &i2cTransaction)) {
-        System_abort("Error Initializing Transaction\n");
-    }
-    System_abort("Transaction Initializing I2C\n");
-
-    txBuffer[0] = 0x01;
+    txBuffer[0] = REG_RESULT;
     i2cTransaction.slaveAddress = Board_OPT3001_ADDR;
     i2cTransaction.writeBuf = txBuffer;
     i2cTransaction.writeCount = 1;
     i2cTransaction.readBuf = rxBuffer;
     i2cTransaction.readCount = 2;
 
+    float convertedLux = 0;
+    char luxStr[40];
+
     /* Take 20 samples and print them out onto the console */
-    for (i = 0; i < 20; i++) {
+    while(1) {
         if (I2C_transfer(i2c, &i2cTransaction)) {
-            success =
+
+            lux = (rxBuffer[0] << 6) | (rxBuffer[1] >> 2);
+            convertedLux = lux * 0.1;
+            sprintf(luxStr, "Lux: %5.2f\n", convertedLux);
+            System_printf("%s\n", luxStr);
+
         }
         else {
             System_printf("I2C Bus fault\n");
         }
 
         System_flush();
-        Task_sleep(1000);
+        Task_sleep(500);
     }
 
     /* Deinitialized I2C */
