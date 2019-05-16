@@ -4,6 +4,7 @@
 #include "grlib/grlib.h"
 #include "grlib/widget.h"
 #include "grlib/canvas.h"
+#include "grlib/checkbox.h"
 #include "drivers/Kentec320x240x16_ssd2119_spi.h"
 #include "drivers/touch.h"
 #include "grlib/slider.h"
@@ -13,26 +14,41 @@
 #include "grlib/pushbutton.h"
 #include "grlib/container.h"
 
+
 #include "driverlib/hibernate.h"
 #include "inc/hw_hibernate.h"
 
 #include "main.h"
 
 
-
+struct Analytic {
+    uint16_t value[13];
+    uint8_t time;
+    bool draw;
+};
 
 uint16_t speed,current,acc,temp;    // user set vars
 uint32_t sec,min,hour;              // timer vars
 uint32_t disp_tab;                  // which tab
+
+struct Analytic variables[5];
+
 
 extern tCanvasWidget tabs[];
 void paintMotorControl(tWidget *psWidget, tContext *psContext);
 void paintGraph(tWidget *psWidget, tContext *psContext);
 void OnSliderChange(tWidget *psWidget, int32_t i32Value);
 void startMotor(), stopMotor(), onNext(), onBack();
-void changeDisplayDate();
+void changeDisplayDate(), turnOnGraphVariable();
+void drawAllAnalytics();
 
 
+
+//*****************************************************************************
+//
+// TIMING FUNCTIONALITY
+//
+//*****************************************************************************
 
 /* - - - - - - CALANDER TIME - - - - - - */
 bool DateTimeGet(struct tm *sTime){
@@ -72,6 +88,8 @@ bool DateTimeDisplayGet(){
 
     if(ui32SecondsPrev == sTime.tm_sec) return false;
 
+    drawAllAnalytics();
+
     ui32SecondsPrev = sTime.tm_sec;
 
     hour = sTime.tm_hour;
@@ -85,22 +103,6 @@ void run_timer(){
     changeDisplayDate();
 }
 
-
-/* - - - - - GUI FUNCTIONALITY - - - - - */
-
-
-Canvas(analytics, tabs+1, 0, 0, &g_sKentec320x240x16_SSD2119, 0,
-       30, 320, 160, CANVAS_STYLE_APP_DRAWN, 0, 0, 0, 0, 0, 0, paintGraph);
-/*
-Canvas(lightLevel, tabs+2, 0, 0, &g_sKentec320x240x16_SSD2119, 0,
-       30, 320, 160, CANVAS_STYLE_APP_DRAWN, 0, 0, 0, 0, 0, 0, paintGraph);
-Canvas(motorTemp, tabs+3, 0, 0, &g_sKentec320x240x16_SSD2119, 0,
-       30, 320, 160, CANVAS_STYLE_APP_DRAWN, 0, 0, 0, 0, 0, 0, paintGraph);
-Canvas(accelData, tabs+4, 0, 0, &g_sKentec320x240x16_SSD2119, 0,
-       30, 320, 160, CANVAS_STYLE_APP_DRAWN, 0, 0, 0, 0, 0, 0, paintGraph);
-Canvas(motorSpeed, tabs+5, 0, 0, &g_sKentec320x240x16_SSD2119, 0,
-       30, 320, 160, CANVAS_STYLE_APP_DRAWN, 0, 0, 0, 0, 0, 0, paintGraph);
- */
 
 //*****************************************************************************
 //
@@ -131,8 +133,7 @@ RectangularButton(stopButton, 0, 0, 0, &g_sKentec320x240x16_SSD2119, 110, 190,
 //TITLE OF PANEL
 int NUM_PANELS = 2;
 
-char * namesOfPanels[] = {"    Motor Control    ","    Motor Analytics     "/*,"    Light Level    ",
-                          "  Motor Temperature  ","   Accelerometer    ","    Motor Speed    "*/};
+char * namesOfPanels[] = {"    Motor Control    ","    Motor Analytics     "};
 Canvas(titleNames, 0, 0, 0, &g_sKentec320x240x16_SSD2119, 70, 0, 200, 30,
        CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_OPAQUE, 0, 0, ClrWhite,
        &g_sFontCm20, 0, 0, 0);
@@ -184,28 +185,112 @@ tSliderWidget sliders[] = {
                 &g_sFontCm14, "0 rpm", 0, 0, OnSliderChange),
 };
 
+
+//*****************************************************************************
+//
+// Analytics widgets
+//
+//*****************************************************************************
+
+Canvas(analytics, tabs+1, 0, 0, &g_sKentec320x240x16_SSD2119, 0,
+       30, 320, 160, CANVAS_STYLE_APP_DRAWN, 0, 0, 0, 0, 0, 0, paintGraph);
+
+tCheckBoxWidget set_variables[] =
+{
+        CheckBoxStruct(tabs + 1, set_variables + 1, 0, &g_sKentec320x240x16_SSD2119,
+                       10, 30, 60, 20, CB_STYLE_TEXT, 12, 0, ClrLightPink, ClrLightPink, &g_sFontCm12,
+                       "Power", 0, turnOnGraphVariable),
+        CheckBoxStruct(tabs + 1, set_variables + 2, 0, &g_sKentec320x240x16_SSD2119,
+                       70, 30, 60, 20, CB_STYLE_TEXT, 12, 0, ClrLightGoldenrodYellow, ClrLightGoldenrodYellow, &g_sFontCm12,
+                      "Light", 0, turnOnGraphVariable),
+        CheckBoxStruct(tabs + 1, set_variables + 3, 0, &g_sKentec320x240x16_SSD2119,
+                       130, 30, 60, 20, CB_STYLE_TEXT, 12, 0, ClrOrange, ClrOrange, &g_sFontCm12,
+                       "Temp", 0, turnOnGraphVariable),
+        CheckBoxStruct(tabs + 1, set_variables + 4, 0, &g_sKentec320x240x16_SSD2119,
+                       190, 30, 60, 20, CB_STYLE_TEXT, 12, 0, ClrCyan, ClrCyan, &g_sFontCm12,
+                       "Accel", 0, turnOnGraphVariable),
+        CheckBoxStruct(tabs + 1, &analytics, 0, &g_sKentec320x240x16_SSD2119,
+                       250, 30, 60, 20, CB_STYLE_TEXT, 12, 0, ClrSnow, ClrSnow, &g_sFontCm12,
+                      "Speed", 0, turnOnGraphVariable),
+};
+
+
 tCanvasWidget tabs[] = {
         CanvasStruct(0, 0, sliders, &g_sKentec320x240x16_SSD2119, 0,
                      30, 320, 160, CANVAS_STYLE_FILL, ClrBlack, 0, 0, 0, 0, 0, 0),
-        CanvasStruct(0, 0, &analytics, &g_sKentec320x240x16_SSD2119, 0, 30,
+        CanvasStruct(0, 0, set_variables, &g_sKentec320x240x16_SSD2119, 0, 30,
                      320, 160, CANVAS_STYLE_FILL, ClrBlack, 0, 0, 0, 0, 0, 0),
-        /*CanvasStruct(0, 0, &lightLevel, &g_sKentec320x240x16_SSD2119, 0, 30,
-                     320, 160, CANVAS_STYLE_FILL, ClrBlack, 0, 0, 0, 0, 0, 0),
-        CanvasStruct(0, 0, &motorTemp, &g_sKentec320x240x16_SSD2119, 0, 30,
-                     320, 160, CANVAS_STYLE_FILL, ClrBlack, 0, 0, 0, 0, 0, 0),
-        CanvasStruct(0, 0, &accelData, &g_sKentec320x240x16_SSD2119, 0, 30,
-                     320, 160, CANVAS_STYLE_FILL, ClrBlack, 0, 0, 0, 0, 0, 0),
-        CanvasStruct(0, 0, &motorSpeed, &g_sKentec320x240x16_SSD2119, 0, 30,
-                     320, 160, CANVAS_STYLE_FILL, ClrBlack, 0, 0, 0, 0, 0, 0),*/
 };
 
 
 void paintGraph(tWidget *psWidget, tContext *psContext){
-    GrContextFontSet(psContext, &g_sFontCm16);
+    GrContextFontSet(psContext, &g_sFontCm12);
     GrContextForegroundSet(psContext, ClrSilver);
 
-    /*********** GRPHING IMPLEMENTATION HERE ************/
+    // draw axis // mapping:: 10px = 1 seconds, 10px = 100 value Y axis
+    GrLineDraw(psContext, 50, 160, 300, 160);
+    GrLineDraw(psContext, 50, 60, 50, 159);
+    int x;
+    for(x=1;x<=12;x++){
+        static char val[5];
+        usprintf(val, "%d",x);
+        GrStringDraw(psContext, val, -1, 50+x*20, 164, 0);
+    }
 
+    int y;
+    for(y=1;y<=5;y++){
+        int yy =5;
+        yy-=y;
+        static char val[5];
+        usprintf(val, "%d",y*500);
+        GrStringDraw(psContext, val, -1, 20, 60+yy*20, 0);
+    }
+
+    //clear lines
+    tRectangle sRect;
+    sRect.i16XMin = 51;
+    sRect.i16YMin = 60;
+    sRect.i16XMax = GrContextDpyWidthGet(psContext) - 1;
+    sRect.i16YMax = 159;
+    GrContextForegroundSet(psContext, ClrBlack);
+    GrRectFill(psContext, &sRect);
+
+    int i,j;
+    for(i=0;i<5;i++){
+        if(variables[i].draw){
+            for(j=0;j<14;j++){
+                if(j<variables[i].time){
+                    if(i==0) GrContextForegroundSet(psContext, ClrLightPink);
+                    if(i==1) GrContextForegroundSet(psContext, ClrLightGoldenrodYellow);
+                    if(i==2) GrContextForegroundSet(psContext, ClrOrange);
+                    if(i==3) GrContextForegroundSet(psContext, ClrCyan);
+                    if(i==4) GrContextForegroundSet(psContext, ClrSnow);
+
+                    GrLineDraw(psContext, 51+j*20, 160-((int)variables[i].value[j]/20), 50+(j+1)*20, 160-((int)variables[i].value[j+1]/20));
+                } else {
+                    break;
+                }
+            }
+        }
+    }
+}
+
+void turnOnGraphVariable(tWidget *psWidget, uint32_t bSelected){
+    uint32_t ui32Idx;
+
+    for(ui32Idx = 0; ui32Idx < 5; ui32Idx++){
+        if((psWidget == (tWidget *)(set_variables + ui32Idx)) && (variables[ui32Idx].draw == false)){
+            variables[ui32Idx].draw = true;
+            variables[ui32Idx].time = 0;
+            break;
+        }
+
+        if((psWidget == (tWidget *)(set_variables + ui32Idx)) && (variables[ui32Idx].draw == true)){
+            variables[ui32Idx].draw = false;
+            variables[ui32Idx].time = 0;
+            break;
+        }
+    }
 }
 
 void paintMotorControl(tWidget *psWidget, tContext *psContext){
@@ -352,6 +437,23 @@ void changeDisplayDate(){
     CanvasTextSet(&dispTime, timer);
     WidgetPaint((tWidget *)&dispTime);
 }
+
+//called every 1 second
+void drawAllAnalytics(){
+
+    int i;
+    for(i=0;i<5;i++){
+        variables[i].value[variables[i].time] = ((variables[i].time+i*2)*100);
+    }
+
+    if(disp_tab == 1) WidgetPaint((tWidget *)(&analytics));
+
+    for(i=0;i<5;i++){
+        variables[i].time++;
+        if(variables[i].time >= 13) variables[i].time = 0;
+    }
+}
+
 /* - - - - - END GUI FUNCTIONALITY - - - - - - */
 
 
