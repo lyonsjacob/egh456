@@ -456,22 +456,7 @@ const PWMTiva_HWAttrs pwmTivaHWAttrs[1] = {
         .baseAddr = PWM0_BASE,
         .pwmOutput = PWM_OUT_1,
         .pwmGenOpts = PWM_GEN_MODE_DOWN | PWM_GEN_MODE_DBG_RUN
-    },
-//    {
-//        .baseAddr = PWM0_BASE,
-//        .pwmOutput = PWM_OUT_2,
-//        .pwmGenOpts = PWM_GEN_MODE_DOWN | PWM_GEN_MODE_DBG_RUN
-//    },
-//    {
-//        .baseAddr = PWM0_BASE,
-//        .pwmOutput = PWM_OUT_3,
-//        .pwmGenOpts = PWM_GEN_MODE_DOWN | PWM_GEN_MODE_DBG_RUN
-//    },
-//    {
-//        .baseAddr = PWM0_BASE,
-//        .pwmOutput = PWM_OUT_4,
-//        .pwmGenOpts = PWM_GEN_MODE_DOWN | PWM_GEN_MODE_DBG_RUN
-//    }
+    }
 };
 
 const PWMTimerTiva_HWAttrs pwmTimerTivaHWAttrs[2] = {
@@ -491,31 +476,6 @@ const PWM_Config PWM_config[] = {
         .object = &pwmTivaObjects[0],
         .hwAttrs = &pwmTivaHWAttrs[0]
     },
-//    {
-//        .fxnTablePtr = &PWMTiva_fxnTable,
-//        .object = &pwmTivaObjects[1],
-//        .hwAttrs = &pwmTivaHWAttrs[1]
-//    },
-//    {
-//        .fxnTablePtr = &PWMTiva_fxnTable,
-//        .object = &pwmTivaObjects[2],
-//        .hwAttrs = &pwmTivaHWAttrs[2]
-//    },
-//    {
-//        .fxnTablePtr = &PWMTiva_fxnTable,
-//        .object = &pwmTivaObjects[3],
-//        .hwAttrs = &pwmTivaHWAttrs[3]
-//    },
-//    {
-//        .fxnTablePtr = &PWMTimerTiva_fxnTable,
-//        .object = &pwmTimerTivaObjects[0],
-//        .hwAttrs = &pwmTimerTivaHWAttrs[0]
-//    },
-//    {
-//        .fxnTablePtr = &PWMTimerTiva_fxnTable,
-//        .object = &pwmTimerTivaObjects[1],
-//        .hwAttrs = &pwmTimerTivaHWAttrs[1]
-//    },
     {NULL, NULL, NULL}
 };
 
@@ -531,15 +491,10 @@ void EK_TM4C1294XL_initPWM(void)
     SysCtlDelay(3);
 
     GPIOPinConfigure(GPIO_PF1_M0PWM1);
-//    GPIOPinConfigure(GPIO_PF2_M0PWM2);
-//    GPIOPinConfigure(GPIO_PF3_M0PWM3);
-//    GPIOPinConfigure(GPIO_PG0_M0PWM4);
-//    GPIOPinConfigure(GPIO_PL4_T0CCP0);
-//    GPIOPinConfigure(GPIO_PL5_T0CCP1);
 
-    GPIOPinTypePWM(GPIO_PORTF_BASE, GPIO_PIN_1 /*| GPIO_PIN_2 | GPIO_PIN_3*/);
-//    GPIOPinTypePWM(GPIO_PORTG_BASE, GPIO_PIN_0);
-//    GPIOPinTypeTimer(GPIO_PORTL_BASE, GPIO_PIN_4 | GPIO_PIN_5);
+
+    GPIOPinTypePWM(GPIO_PORTF_BASE, GPIO_PIN_1);
+
 
     PWM_init();
 }
