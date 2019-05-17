@@ -49,8 +49,12 @@
 #include "driverlib/hibernate.h"
 #include "inc/hw_hibernate.h"
 
+// Motor files
+#include <ti/drivers/PWM.h>
+
 // Our header files:
 #include "GUI.h"
+#include <MotorControl.h>
 
 #define TASKSTACKSIZE  4024
 
@@ -160,6 +164,8 @@ int main(void)
     // Board_initUSBMSCHFatFs();
     // Board_initWatchdog();
     // Board_initWiFi();
+    Board_initPWM();
+    MotorSetup();
 
 
     // Set the clocking to run directly from the crystal at 120MHz.

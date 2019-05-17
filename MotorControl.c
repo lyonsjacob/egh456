@@ -143,10 +143,10 @@ void MotorControlSwi(UArg arg0, UArg arg1)
 {
     uint32_t error = Motor_Control.requiredRPM -Motor_Control.currentRPM;
 
-    uint32_t AccelerationRadss = ((Motor_Control.lastRPM -Motor_Control.currentRPM)*0.10472)*10;
+    //uint32_t AccelerationRadss = ((Motor_Control.lastRPM -Motor_Control.currentRPM)*0.10472)*10;
 
     /*set duty cycle*/
-    Motor_Control.duty = Motor_Control.duty+error*0.1;
+    //Motor_Control.duty = Motor_Control.duty+error*0.1;
 
     /*check if motor duty cycle is at 100%*/
     if(Motor_Control.duty > Motor_Control.pwmPeriod ){
@@ -192,7 +192,7 @@ void SetupMotorClock(void)
 
 void initializeMotorStructValues(void){
     Motor_Control.pwmPeriod       = 3000;      // Period and duty in microseconds
-    Motor_Control.duty            = 0;          // set motor speed
+    Motor_Control.duty            = 1000;          // set motor speed
     Motor_Control.interruptCount  = 0;
     Motor_Control.currentRPM      = 0;
     Motor_Control.lastRPM         = 0;
