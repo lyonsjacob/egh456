@@ -18,6 +18,7 @@
 #include "driverlib/hibernate.h"
 #include "inc/hw_hibernate.h"
 
+#include "MotorControl.h"
 #include "main.h"
 
 
@@ -30,6 +31,7 @@ struct Analytic {
 uint16_t speed,current,acc,temp;    // user set vars
 uint32_t sec,min,hour;              // timer vars
 uint32_t disp_tab;                  // which tab
+bool motorOn = false;
 
 struct Analytic variables[5];
 
@@ -88,6 +90,7 @@ bool DateTimeDisplayGet(){
 
     if(ui32SecondsPrev == sTime.tm_sec) return false;
 
+    if(motorOn) setRPM(speed);
     drawAllAnalytics();
 
     ui32SecondsPrev = sTime.tm_sec;
@@ -149,6 +152,12 @@ Canvas(dispTime, 0, 0, 0, &g_sKentec320x240x16_SSD2119, 5, 0, 50, 30,
        CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_OPAQUE, 0, 0, ClrSilver,
        &g_sFontCm14, 0, 0, 0);
 
+//DYNAMIC SPEED
+Canvas(dispSpeed, 0, 0, 0, &g_sKentec320x240x16_SSD2119, 94, 34, 50, 30,
+       CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_OPAQUE, 0, 0, ClrSilver,
+       &g_sFontCm14, 0, 0, 0);
+
+
 //*****************************************************************************
 //
 // Motor Control Widgets --> sliders = the canvas
@@ -198,7 +207,7 @@ Canvas(analytics, tabs+1, 0, 0, &g_sKentec320x240x16_SSD2119, 0,
 tCheckBoxWidget set_variables[] =
 {
         CheckBoxStruct(tabs + 1, set_variables + 1, 0, &g_sKentec320x240x16_SSD2119,
-                       10, 30, 60, 20, CB_STYLE_TEXT, 12, 0, ClrLightPink, ClrLightPink, &g_sFontCm12,
+                       10, 30, 60, 20, CB_STYLE_TEXT, 12, 0, ClrLightGreen, ClrLightGreen, &g_sFontCm12,
                        "Power", 0, turnOnGraphVariable),
         CheckBoxStruct(tabs + 1, set_variables + 2, 0, &g_sKentec320x240x16_SSD2119,
                        70, 30, 60, 20, CB_STYLE_TEXT, 12, 0, ClrLightGoldenrodYellow, ClrLightGoldenrodYellow, &g_sFontCm12,
@@ -260,7 +269,7 @@ void paintGraph(tWidget *psWidget, tContext *psContext){
         if(variables[i].draw){
             for(j=0;j<14;j++){
                 if(j<variables[i].time){
-                    if(i==0) GrContextForegroundSet(psContext, ClrLightPink);
+                    if(i==0) GrContextForegroundSet(psContext, ClrLightGreen);
                     if(i==1) GrContextForegroundSet(psContext, ClrLightGoldenrodYellow);
                     if(i==2) GrContextForegroundSet(psContext, ClrOrange);
                     if(i==3) GrContextForegroundSet(psContext, ClrCyan);
@@ -299,7 +308,7 @@ void paintMotorControl(tWidget *psWidget, tContext *psContext){
     GrContextForegroundSet(psContext, ClrSilver);
 
 
-    GrStringDraw(psContext, "Set Speed", -1, 54, 40, 0);
+    GrStringDraw(psContext, "Set Speed:", -1, 30, 40, 0);
     GrStringDraw(psContext, "Max Accelerometer", -1, 176, 40, 0);
     GrStringDraw(psContext, "Max Current", -1, 50, 120, 0);
     GrStringDraw(psContext, "Max Temperature", -1, 180, 120, 0);
@@ -344,6 +353,9 @@ void OnSliderChange(tWidget *psWidget, int32_t i32Value){
 }
 
 void startMotor(){
+
+    motorOn = true;
+    setRPM(speed);
     toggleLight(0,1);
 
     WidgetRemove((tWidget *)&startButton);
@@ -352,6 +364,9 @@ void startMotor(){
 }
 
 void stopMotor(){
+
+    motorOn = false;
+    setRPM(0);
     toggleLight(0,0);
 
     WidgetRemove((tWidget *)&stopButton);
@@ -379,6 +394,7 @@ void onNext(){
         PushButtonTextOn(&backButton);
         PushButtonFillOff(&backButton);
         WidgetPaint((tWidget *)&backButton);
+        WidgetRemove((tWidget *)(&dispSpeed));
     }
 
     if(disp_tab == (NUM_PANELS - 1)){
@@ -408,6 +424,8 @@ void onBack(){
         PushButtonTextOff(&backButton);
         PushButtonFillOn(&backButton);
         WidgetPaint((tWidget *)&backButton);
+        WidgetAdd(WIDGET_ROOT, (tWidget *)&dispSpeed);
+        WidgetPaint((tWidget *)&dispSpeed);
     }
 
     if(disp_tab == (NUM_PANELS - 2)){
@@ -438,12 +456,32 @@ void changeDisplayDate(){
     WidgetPaint((tWidget *)&dispTime);
 }
 
+void changeSpeedDisplay(int disp){
+    static char spd[10];
+    usprintf(spd, "%d", disp);
+    CanvasTextSet(&dispSpeed, spd);
+    WidgetPaint((tWidget *)&dispSpeed);
+}
+
 //called every 1 second
 void drawAllAnalytics(){
 
-    int i;
+    int i, toSet, value;
     for(i=0;i<5;i++){
-        variables[i].value[variables[i].time] = ((variables[i].time+i*2)*100);
+        if(i==4){
+            toSet = getRPM();
+            if(disp_tab == 0) changeSpeedDisplay(toSet);
+
+
+            // FOR JAKE TO DEBUG
+            //value = FUNC
+            /*static char jakesString[10];
+            usprintf(jakesString, "%d", value);
+            CanvasTextSet(&titleNames, jakesString);
+            WidgetPaint((tWidget *)&titleNames);*/
+        }
+
+        variables[i].value[variables[i].time] = toSet;
     }
 
     if(disp_tab == 1) WidgetPaint((tWidget *)(&analytics));
@@ -470,6 +508,7 @@ void GUI_init(){
     WidgetAdd(WIDGET_ROOT, (tWidget *)&backButton);
     WidgetAdd(WIDGET_ROOT, (tWidget *)&dayOrNight);
     WidgetAdd(WIDGET_ROOT, (tWidget *)&dispTime);
+    WidgetAdd(WIDGET_ROOT, (tWidget *)&dispSpeed);
 
     // get this working...
     changeDisplayDate();

@@ -34,8 +34,8 @@ struct motor_control
     PWM_Handle  pwm1;
     PWM_Params  params;
     uint8_t     emergencyStop;
-    uint16_t    pwmPeriod, duty;
-    uint32_t    currentRPM, lastRPM, requiredRPM;
+    int16_t    pwmPeriod, duty;
+    int32_t    currentRPM, lastRPM, requiredRPM;
     uint32_t    interruptCount;
     uint32_t    MaxAcceleration;
 
@@ -50,7 +50,7 @@ Clock_Struct clk0Struct;
 
 
 /*Sets motors RPM*/
-void setRPM(uint32_t RPM)
+void setRPM(int32_t RPM)
 {
     if(!Motor_Control.emergencyStop){
         Motor_Control.requiredRPM  = RPM;
@@ -59,7 +59,7 @@ void setRPM(uint32_t RPM)
 }
 
 /*Gets the current motor RPM*/
-uint32_t getRPM(void)
+int32_t getRPM(void)
 {
     return Motor_Control.currentRPM;
 }
@@ -83,10 +83,8 @@ void HALL_A_HWI(unsigned int index)
     GPIO_clearInt(Board_HALL_A);
     if(GPIO_read(Board_HALL_A)){
         GPIO_write(Board_STATE0, Board_ON);
-        GPIO_write(Board_LED0, Board_ON);
     }else{
         GPIO_write(Board_STATE0, Board_OFF);
-        GPIO_write(Board_LED0, Board_OFF);
     }
 }
 
@@ -101,10 +99,8 @@ void HALL_B_HWI(unsigned int index)
     GPIO_clearInt(Board_HALL_B);
     if(GPIO_read(Board_HALL_B)){
         GPIO_write(Board_STATE2, Board_ON);
-        GPIO_write(Board_LED1, Board_ON);
     }else{
         GPIO_write(Board_STATE2, Board_OFF);
-        GPIO_write(Board_LED1, Board_OFF);
     }
 
 }
@@ -120,10 +116,8 @@ void HALL_C_HWI(unsigned int index)
     GPIO_clearInt(Board_HALL_C);
     if(GPIO_read(Board_HALL_C)){
         GPIO_write(Board_STATE0, Board_ON);
-        GPIO_write(Board_LED2, Board_ON);
     }else{
         GPIO_write(Board_STATE0, Board_OFF);
-        GPIO_write(Board_LED2, Board_OFF);
     }
 
 }
@@ -141,12 +135,13 @@ void clk0Fxn(UArg arg0)
 
 void MotorControlSwi(UArg arg0, UArg arg1)
 {
-    uint32_t error = Motor_Control.requiredRPM -Motor_Control.currentRPM;
+    int32_t motorError = Motor_Control.requiredRPM -Motor_Control.currentRPM;
 
     //uint32_t AccelerationRadss = ((Motor_Control.lastRPM -Motor_Control.currentRPM)*0.10472)*10;
 
     /*set duty cycle*/
-    //Motor_Control.duty = Motor_Control.duty+error*0.1;
+    Motor_Control.duty = (int)(Motor_Control.duty+motorError*0.1);
+    if(Motor_Control.duty < 0) Motor_Control.duty = 0;
 
     /*check if motor duty cycle is at 100%*/
     if(Motor_Control.duty > Motor_Control.pwmPeriod ){
@@ -192,7 +187,7 @@ void SetupMotorClock(void)
 
 void initializeMotorStructValues(void){
     Motor_Control.pwmPeriod       = 3000;      // Period and duty in microseconds
-    Motor_Control.duty            = 1000;          // set motor speed
+    Motor_Control.duty            = 0;          // set motor speed
     Motor_Control.interruptCount  = 0;
     Motor_Control.currentRPM      = 0;
     Motor_Control.lastRPM         = 0;
