@@ -16,23 +16,11 @@ void setRPM(int32_t RPM);
 /*Gets the current motor RPM*/
 int32_t getRPM(void);
 
+/*Gets the motors current current Acceleration in radian/second^2 */
+int32_t getAcceleration(void);
+
 /*Puts motor controller in emergency stop state*/
 void emergencyStop(void);
-
-
-//void HALL_A_HWI(unsigned int index);
-
-//void HALL_B_HWI(unsigned int index);
-
-//void HALL_C_HWI(unsigned int index);
-
-//void clk0Fxn(UArg arg0);
-
-//void MotorControlSwi(UArg arg0, UArg arg1);
-
-//void SetupMotorClock(void);
-
-//void initializeMotorStructValues(void);
 
 /* sets up hall affect sensors, PWM and initializes motor driving hardware*/
 void MotorSetup(void);
