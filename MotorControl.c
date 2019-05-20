@@ -142,11 +142,8 @@ void StartMotor(void)
     uint8_t hallB = GPIO_read(Board_HALL_B);
     uint8_t hallC = GPIO_read(Board_HALL_C);
 
-    System_printf("Hall A = %lu\n", (ULong)hallA);
-    System_flush();
 
     PWM_setDuty(Motor_Control.pwm1, 1000);
-
 
     if(!hallA && !hallB && hallC){
         GPIO_write(Board_STATE1, Board_OFF);
@@ -237,7 +234,6 @@ void MotorControlSwi(UArg arg0, UArg arg1)
 
 
     PWM_setDuty(Motor_Control.pwm1, Motor_Control.duty);
-
 }
 
 
@@ -258,7 +254,8 @@ void SetupMotorClock(void)
 
 
 
-void initializeMotorStructValues(void){
+void initializeMotorStructValues(void)
+{
     Motor_Control.pwmPeriod       = 3000;      // Period and duty in microseconds
     Motor_Control.duty            = 0;          // set motor speed
     Motor_Control.interruptCount  = 0;
