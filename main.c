@@ -139,7 +139,6 @@ Void guiRun() {
     }
 }
 
-
 Void uartRun() {
     // ----- Setup UART (for printing data)
 
@@ -154,7 +153,7 @@ Void uartRun() {
     // ----- Setup TEMP UART
     UART_Params_init(&uart7params);
     uart7params.baudRate  = 115200;
-    uart7params.readEcho = UART_ECHO_OFF;
+    //uart7params.readEcho = UART_ECHO_OFF;
     uart7params.readDataMode = UART_DATA_BINARY;
     uart7params.writeDataMode = UART_DATA_BINARY;
     uart7params.parityType = UART_PAR_NONE;
@@ -163,33 +162,63 @@ Void uartRun() {
         System_printf("The UART Temp did not open");
     }
 
-
     const unsigned char hello[] = "Address Initialize\n";
     int ret = UART_write(uart0handle, hello, sizeof(hello));
     System_printf("The UART wrote %d bytes\n", ret);
 
     // Setup connection (address initialize)
     // Send calibration byte
-    uint8_t calibration_byte = 0b01010101;
-    UART_write(uart7handle, calibration_byte, sizeof(calibration_byte));
+    uint8_t calibration_byte = 0b01010101; // AKA 0x55 send data from right to left
+    UART_write(uart7handle, &calibration_byte, sizeof(calibration_byte));
 
-    // Send address initialize
+    // Send address initialize (command)
     uint8_t addr_init_byte = 0b10010101;
-    UART_write(uart7handle, addr_init_byte, sizeof(addr_init_byte));
+    UART_write(uart7handle, &addr_init_byte, sizeof(addr_init_byte));
 
     // Send Address assign byte
     uint8_t addr_assign_byte = 0b00001101;
-    UART_write(uart7handle, addr_assign_byte, sizeof(addr_assign_byte));
+    UART_write(uart7handle, &addr_assign_byte, sizeof(addr_assign_byte));
 
-    // Read address responses
-    uint8_t addr_response;
-    UART_read(uart7handle, &addr_response, sizeof(addr_response));
-    System_printf("%c", addr_response);
-    System_flush();
+    uint8_t echo_response;
+    // Will get back echo of last 3 bytes
+    int i;
+    for (i=0; i < 3; i++) {
+        UART_read(uart7handle, &echo_response, sizeof(echo_response));
+    }
+
+    // Read address responses of temp sensor 1
+    uint8_t addr_response1;
+    UART_read(uart7handle, &addr_response1, sizeof(addr_response1));
+
+    Task_sleep(7);
+
+    // Read address responses of temp sensor 2
+    uint8_t addr_response2;
+    UART_read(uart7handle, &addr_response2, sizeof(addr_response2));
+
+    Task_sleep(1250);
 
     // Send Last Device poll
-    //uint8_t last_response;
-    //UART_read(uart7handle, last_response, sizeof(last_response));
+    UART_write(uart7handle, &calibration_byte, sizeof(calibration_byte));
+    uint8_t last_response_byte = 0b01010111;
+    UART_write(uart7handle, &last_response_byte, sizeof(last_response_byte));
+
+    // Will get back echo of last 2 bytes
+    for (i=0; i < 2; i++) {
+            UART_read(uart7handle, &echo_response, sizeof(echo_response));
+        }
+
+    Task_sleep(7);
+
+    uint8_t last_response;
+    UART_read(uart7handle, &last_response, sizeof(last_response));
+
+    if (last_response == addr_response2) {
+        System_printf("2nd response and last response are same!");
+    } else {
+        System_printf("BEWARE: 2nd response and last response are NOT the same!");
+    }
+    System_flush();
 }
 
 /*
@@ -256,7 +285,6 @@ int main(void)
     setup_adc_hwi();
 
     // Setup Swis
-
 
     /* Start BIOS */
     BIOS_start();
