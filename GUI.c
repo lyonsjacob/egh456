@@ -42,7 +42,7 @@ void paintGraph(tWidget *psWidget, tContext *psContext);
 void OnSliderChange(tWidget *psWidget, int32_t i32Value);
 void startMotor(), stopMotor(), onNext(), onBack();
 void changeDisplayDate(), turnOnGraphVariable();
-void drawAllAnalytics();
+void drawAllAnalytics(), changeSpeedDisplay(int disp);
 
 
 
@@ -142,7 +142,7 @@ Canvas(titleNames, 0, 0, 0, &g_sKentec320x240x16_SSD2119, 70, 0, 200, 30,
        &g_sFontCm20, 0, 0, 0);
 
 //DAY OR NIGHT FUNCTIONALITY
-char * dayOrNightNames[] = { "Day", "Night" };
+char * dayOrNightNames[] = { "  Day  ", "Night" };
 Canvas(dayOrNight, 0, 0, 0, &g_sKentec320x240x16_SSD2119, 270, 0, 50, 30,
        CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_OPAQUE, 0, 0, ClrSilver,
        &g_sFontCm14, 0, 0, 0);
@@ -153,7 +153,7 @@ Canvas(dispTime, 0, 0, 0, &g_sKentec320x240x16_SSD2119, 5, 0, 50, 30,
        &g_sFontCm14, 0, 0, 0);
 
 //DYNAMIC SPEED
-Canvas(dispSpeed, 0, 0, 0, &g_sKentec320x240x16_SSD2119, 94, 34, 50, 30,
+Canvas(dispSpeed, 0, 0, 0, &g_sKentec320x240x16_SSD2119, 97, 34, 50, 30,
        CANVAS_STYLE_TEXT | CANVAS_STYLE_TEXT_OPAQUE, 0, 0, ClrSilver,
        &g_sFontCm14, 0, 0, 0);
 
@@ -286,10 +286,22 @@ void paintGraph(tWidget *psWidget, tContext *psContext){
 
 void turnOnGraphVariable(tWidget *psWidget, uint32_t bSelected){
     uint32_t ui32Idx;
+    int toSet;
 
     for(ui32Idx = 0; ui32Idx < 5; ui32Idx++){
         if((psWidget == (tWidget *)(set_variables + ui32Idx)) && (variables[ui32Idx].draw == false)){
             variables[ui32Idx].draw = true;
+
+            //if(i==1) toSet = getPower();
+            //if(i==2) toSet = getLUX();
+            //if(i==3) toSet = getTemp();
+
+            if(ui32Idx == 4){
+                toSet = getRPM();
+                if(disp_tab == 0) changeSpeedDisplay(toSet);
+            }
+
+            variables[ui32Idx].value[0] = toSet;
             variables[ui32Idx].time = 0;
             break;
         }
@@ -458,7 +470,7 @@ void changeDisplayDate(){
 
 void changeSpeedDisplay(int disp){
     static char spd[10];
-    usprintf(spd, "%d", disp);
+    usprintf(spd, "  %d  ", disp);
     CanvasTextSet(&dispSpeed, spd);
     WidgetPaint((tWidget *)&dispSpeed);
 }
@@ -466,30 +478,29 @@ void changeSpeedDisplay(int disp){
 //called every 1 second
 void drawAllAnalytics(){
 
-    int i, toSet, value;
+    int i, toSet;
+
     for(i=0;i<5;i++){
+        variables[i].time++;
+        if(variables[i].time >= 13) variables[i].time = 0;
+    }
+
+    for(i=0;i<5;i++){
+        toSet = 0;
+
+        //if(i==1) toSet = getPower();
+        //if(i==2) toSet = getLUX();
+        //if(i==3) toSet = getTemp();
+
         if(i==4){
             toSet = getRPM();
             if(disp_tab == 0) changeSpeedDisplay(toSet);
-
-
-            // FOR JAKE TO DEBUG
-            //value = FUNC
-            /*static char jakesString[10];
-            usprintf(jakesString, "%d", value);
-            CanvasTextSet(&titleNames, jakesString);
-            WidgetPaint((tWidget *)&titleNames);*/
         }
 
         variables[i].value[variables[i].time] = toSet;
     }
 
     if(disp_tab == 1) WidgetPaint((tWidget *)(&analytics));
-
-    for(i=0;i<5;i++){
-        variables[i].time++;
-        if(variables[i].time >= 13) variables[i].time = 0;
-    }
 }
 
 /* - - - - - END GUI FUNCTIONALITY - - - - - - */
