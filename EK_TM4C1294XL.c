@@ -689,6 +689,13 @@ const UARTTivaDMA_HWAttrs uartTivaHWAttrs[EK_TM4C1294XL_UARTCOUNT] = {
         .intPriority = (~0),
         .rxChannelIndex = UDMA_CH8_UART0RX,
         .txChannelIndex = UDMA_CH9_UART0TX,
+    },
+    {
+        .baseAddr = UART7_BASE,
+        .intNum = INT_UART7,
+        .intPriority = (~0),
+        .rxChannelIndex = UDMA_CH20_UART7RX,
+        .txChannelIndex = UDMA_CH21_UART7TX,
     }
 };
 
@@ -698,12 +705,17 @@ const UART_Config UART_config[] = {
         .object = &uartTivaObjects[0],
         .hwAttrs = &uartTivaHWAttrs[0]
     },
+    {
+         .fxnTablePtr = &UARTTivaDMA_fxnTable,
+         .object = &uartTivaObjects[1],
+         .hwAttrs = &uartTivaHWAttrs[1]
+    },
     {NULL, NULL, NULL}
 };
 #else
 #include <ti/drivers/uart/UARTTiva.h>
 
-UARTTiva_Object uartTivaObjects[EK_TM4C1294XL_UARTCOUNT];
+UARTTiva_Object uartTivaObjects[EK_TM4C1294XL_UARTCOUNT]; // Holds info of PWM Pins
 unsigned char uartTivaRingBuffer[EK_TM4C1294XL_UARTCOUNT][32];
 
 /* UART configuration structure */
@@ -715,6 +727,14 @@ const UARTTiva_HWAttrs uartTivaHWAttrs[EK_TM4C1294XL_UARTCOUNT] = {
         .flowControl = UART_FLOWCONTROL_NONE,
         .ringBufPtr  = uartTivaRingBuffer[0],
         .ringBufSize = sizeof(uartTivaRingBuffer[0])
+    },
+    {
+        .baseAddr = UART7_BASE,
+        .intNum = INT_UART7,
+        .intPriority = (~0),
+        .flowControl = UART_FLOWCONTROL_NONE,
+        .ringBufPtr  = uartTivaRingBuffer[1],
+        .ringBufSize = sizeof(uartTivaRingBuffer[1])
     }
 };
 
@@ -723,6 +743,11 @@ const UART_Config UART_config[] = {
         .fxnTablePtr = &UARTTiva_fxnTable,
         .object = &uartTivaObjects[0],
         .hwAttrs = &uartTivaHWAttrs[0]
+    },
+    {
+         .fxnTablePtr = &UARTTiva_fxnTable,
+         .object = &uartTivaObjects[1],
+         .hwAttrs = &uartTivaHWAttrs[1]
     },
     {NULL, NULL, NULL}
 };
@@ -734,10 +759,17 @@ const UART_Config UART_config[] = {
 void EK_TM4C1294XL_initUART(void)
 {
     /* Enable and configure the peripherals used by the uart. */
+    // UART 0
     SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
     GPIOPinConfigure(GPIO_PA0_U0RX);
     GPIOPinConfigure(GPIO_PA1_U0TX);
     GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
+
+    // UART 7
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_UART7);
+    GPIOPinConfigure(GPIO_PC4_U7RX);
+    GPIOPinConfigure(GPIO_PC5_U7TX);
+    GPIOPinTypeUART(GPIO_PORTC_BASE, GPIO_PIN_4 | GPIO_PIN_5);
 
     /* Initialize the UART driver */
 #if TI_DRIVERS_UART_DMA

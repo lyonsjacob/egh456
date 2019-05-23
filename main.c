@@ -24,7 +24,7 @@
 // #include <ti/drivers/I2C.h>
 // #include <ti/drivers/SDSPI.h>
 // #include <ti/drivers/SPI.h>
-// #include <ti/drivers/UART.h>
+#include <ti/drivers/UART.h>
 // #include <ti/drivers/USBMSCHFatFs.h>
 // #include <ti/drivers/Watchdog.h>
 // #include <ti/drivers/WiFi.h>
@@ -58,14 +58,20 @@
 #include "GUI.h"
 
 #define TASKSTACKSIZE  4024
+#define UARTTASKSTACKSIZE 768
 
 uint32_t g_ui32SysClock;
 
-// Hwi Interrupts
-Hwi_Handle myHwi;
-
 Task_Struct gui_struct;
 Char gui_stack[TASKSTACKSIZE];
+Task_Struct uart_struct;
+Char uart_stack[UARTTASKSTACKSIZE];
+
+// UART stuff
+UART_Handle      uart0handle;
+UART_Params      uart0params;
+UART_Handle      uart7handle;
+UART_Params      uart7params;
 
 #ifdef ewarm
 #pragma data_alignment=1024
@@ -76,7 +82,6 @@ tDMAControlTable psDMAControlTable[64];
 #else
 tDMAControlTable psDMAControlTable[64] __attribute__ ((aligned(1024)));
 #endif
-
 
 // TOGGLE GPIO LIGHTS // off = 0 on = 1
 void toggleLight(int light, int tog){
@@ -92,6 +97,7 @@ void toggleLight(int light, int tog){
  */
 
 // GUI Task Function
+
 Void guiRun() {
     tContext sContext;
     bool bUpdate;
@@ -133,37 +139,57 @@ Void guiRun() {
     }
 }
 
-/*
- *  ======== Hwi ========
- */
 
-void motorTempHwi() {
-    uint32_t ui32Status;
+Void uartRun() {
+    // ----- Setup UART (for printing data)
 
-    //
-    // Get the interrrupt status.
-    //
-    ui32Status = UARTIntStatus(UART7_BASE, true);
-
-    //
-    // Clear the asserted interrupts.
-    //
-    UARTIntClear(UART7_BASE, ui32Status);
-
-    //
-    // Loop while there are characters in the receive FIFO.
-    //
-    char rec_char;
-    while(UARTCharsAvail(UART7_BASE))
-    {
-        //
-        // Read the next character from the UART and write it back to the UART.
-        //
-
-        rec_char = (char)UARTCharGetNonBlocking(UART7_BASE);
-
-        UARTCharPutNonBlocking(UART0_BASE, rec_char);
+    UART_Params_init(&uart0params); // Setup to defaults
+    uart0params.baudRate  = 115200;
+    uart0params.readEcho = UART_ECHO_OFF;
+    uart0handle = UART_open(Board_UART0, &uart0params);
+    if (!uart0handle) {
+        System_printf("UART Putty did not open");
     }
+
+    // ----- Setup TEMP UART
+    UART_Params_init(&uart7params);
+    uart7params.baudRate  = 115200;
+    uart7params.readEcho = UART_ECHO_OFF;
+    uart7params.readDataMode = UART_DATA_BINARY;
+    uart7params.writeDataMode = UART_DATA_BINARY;
+    uart7params.parityType = UART_PAR_NONE;
+    uart7handle = UART_open(Board_UART7, &uart7params);
+    if (!uart7handle) {
+        System_printf("The UART Temp did not open");
+    }
+
+
+    const unsigned char hello[] = "Address Initialize\n";
+    int ret = UART_write(uart0handle, hello, sizeof(hello));
+    System_printf("The UART wrote %d bytes\n", ret);
+
+    // Setup connection (address initialize)
+    // Send calibration byte
+    uint8_t calibration_byte = 0b01010101;
+    UART_write(uart7handle, calibration_byte, sizeof(calibration_byte));
+
+    // Send address initialize
+    uint8_t addr_init_byte = 0b10010101;
+    UART_write(uart7handle, addr_init_byte, sizeof(addr_init_byte));
+
+    // Send Address assign byte
+    uint8_t addr_assign_byte = 0b00001101;
+    UART_write(uart7handle, addr_assign_byte, sizeof(addr_assign_byte));
+
+    // Read address responses
+    uint8_t addr_response;
+    UART_read(uart7handle, &addr_response, sizeof(addr_response));
+    System_printf("%c", addr_response);
+    System_flush();
+
+    // Send Last Device poll
+    //uint8_t last_response;
+    //UART_read(uart7handle, last_response, sizeof(last_response));
 }
 
 /*
@@ -187,7 +213,17 @@ void setup_gui_task(){
     Task_Params_init(&gui_params);
     gui_params.stackSize = TASKSTACKSIZE;
     gui_params.stack = &gui_stack;
+    gui_params.priority = 1;
     Task_construct(&gui_struct, (Task_FuncPtr)guiRun, &gui_params, NULL);
+}
+
+void setup_uart_task() {
+    Task_Params uart_params;
+    Task_Params_init(&uart_params);
+    uart_params.stackSize = UARTTASKSTACKSIZE;
+    uart_params.stack = &uart_stack;
+    uart_params.priority = 10;
+    Task_construct(&uart_struct, (Task_FuncPtr)uartRun, &uart_params, NULL);
 }
 
 int main(void)
@@ -200,7 +236,7 @@ int main(void)
     // Board_initI2C();
     // Board_initSDSPI();
     // Board_initSPI();
-    // Board_initUART();
+    Board_initUART();
     // Board_initUSB(Board_USBDEVICE);
     // Board_initUSBMSCHFatFs();
     // Board_initWatchdog();
@@ -209,65 +245,18 @@ int main(void)
 
     // Set the clocking to run directly from the crystal at 120MHz.
     g_ui32SysClock = SysCtlClockFreqSet((SYSCTL_XTAL_25MHZ | SYSCTL_OSC_MAIN
-                     | SYSCTL_USE_PLL |SYSCTL_CFG_VCO_480), 120000000);
+                   | SYSCTL_USE_PLL |SYSCTL_CFG_VCO_480), 120000000);
 
 
     // Setup tasks
-    setup_gui_task();
-
+    //setup_gui_task();
+    setup_uart_task();
 
     // Setup Hwis
     setup_adc_hwi();
 
-
     // Setup Swis
 
-    // ----- Setup UART (for printing data)
-    // Setup hardware Hwi
-    Hwi_Params hwiParams;
-    Error_Block hwi_eb;
-    Error_init(&hwi_eb);
-
-    Hwi_Params_init(&hwiParams);
-    int id = INT_UART7_TM4C123;
-    myHwi = Hwi_create(id, (Hwi_FuncPtr)motorTempHwi, &hwiParams, &hwi_eb);
-
-    if (myHwi == NULL) System_abort("Hwi create failed");
-
-    // Enable the peripherals used by this example.
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
-
-    // Set GPIO A0 and A1 as UART pins.
-    GPIOPinConfigure(GPIO_PA0_U0RX);
-    GPIOPinConfigure(GPIO_PA1_U0TX);
-    GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
-
-    // Configure the UART for 115,200, 8-N-1 operation.
-    UARTConfigSetExpClk(UART0_BASE, g_ui32SysClock, 115200,
-                           (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE |
-                            UART_CONFIG_PAR_NONE));
-
-    UARTCharPutNonBlocking(UART0_BASE, 'y');
-
-    // ---- Setup UART (for reading motor temp)
-    // Enable peripherals
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_UART7);
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
-
-    // Set UART pins
-    GPIOPinConfigure(GPIO_PC4_U7RX);
-    GPIOPinConfigure(GPIO_PC5_U7TX);
-    GPIOPinTypeUART(GPIO_PORTC_BASE, GPIO_PIN_4 | GPIO_PIN_5);
-
-    // Configure the UART for 115,200, 8-N-1 operation.
-    UARTConfigSetExpClk(UART7_BASE, g_ui32SysClock, 115200,
-                           (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE |
-                            UART_CONFIG_PAR_NONE));
-
-    // Enable the UART interrupt.
-    IntEnable(INT_UART7);
-    UARTIntEnable(UART7_BASE, UART_INT_RX | UART_INT_RT);
 
     /* Start BIOS */
     BIOS_start();
