@@ -139,6 +139,37 @@ Void guiRun() {
     }
 }
 
+#define MSB2LSB(b) (((b)&1?128:0)|((b)&2?64:0)|((b)&4?32:0)|((b)&8?16:0)|((b)&16?8:0)|((b)&32?4:0)|((b)&64?2:0)|((b)&128?1:0))
+
+float DecodeTemperatureResult(uint8_t byte1, uint8_t byte2){
+    // convert raw byte response to floating point temperature
+    // Get binary twos complement
+    //byte1 = ~byte1 + 1;
+    //byte2 = ~byte2 + 1;
+    //byte1 = 0b00001000;
+    //byte2 = 0b00011010;
+    byte1 = MSB2LSB(byte1);
+    byte2 = MSB2LSB(byte2);
+    uint16_t Bytes;
+    float temperature;
+    Bytes = byte2 << 8 | byte1;
+    float decimal = Bytes;
+    temperature = decimal * (0.015625);
+    return temperature;
+}
+
+float TMP107_DecodeTemperatureResult(int HByte, int LByte){
+    // convert raw byte response to floating point temperature
+    HByte = MSB2LSB(HByte);
+    LByte = MSB2LSB(LByte);
+    int Bytes;
+    float temperature;
+    Bytes = HByte << 8 | LByte;
+    Bytes &= 0xFFFC; //Mask NVM bits not used in Temperature Result
+    temperature = (float) Bytes / 256;
+    return temperature;
+}
+
 Void uartRun() {
     // ----- Setup UART (for printing data)
 
@@ -205,8 +236,8 @@ Void uartRun() {
 
     // Will get back echo of last 2 bytes
     for (i=0; i < 2; i++) {
-            UART_read(uart7handle, &echo_response, sizeof(echo_response));
-        }
+        UART_read(uart7handle, &echo_response, sizeof(echo_response));
+    }
 
     Task_sleep(7);
 
@@ -219,6 +250,50 @@ Void uartRun() {
         System_printf("BEWARE: 2nd response and last response are NOT the same!");
     }
     System_flush();
+
+    // ------------- LETS READ A TEMP
+    uint8_t temp_register_byte = 0b00000101;
+    //uint8_t temp_register_byte = 0xA0;
+    float temp1;
+    float temp2;
+
+    while(1) {
+        // Send global read
+        // 1. Send calibration byte
+        UART_write(uart7handle, &calibration_byte, sizeof(calibration_byte));
+        // 2. Send addr byte
+        UART_write(uart7handle, &last_response, sizeof(addr_assign_byte));
+        // 3. Send register pointer = temperature register
+        UART_write(uart7handle, &temp_register_byte, sizeof(temp_register_byte));
+
+        Task_sleep(7);
+
+        // Will get back echo of last 3 bytes
+        for (i=0; i < 3; i++) {
+            UART_read(uart7handle, &echo_response, sizeof(echo_response));
+        }
+
+        Task_sleep(7);
+
+        // Read temperatures
+        uint8_t temp_sensor_1[2];
+        uint8_t temp_sensor_2[2];
+
+        // Returns furthest sensor first
+        for (i=0; i < 2; i++) {
+            UART_read(uart7handle, &temp_sensor_2[i], sizeof(temp_sensor_2[i]));
+        }
+        Task_sleep(7);
+        for (i=0; i < 2; i++) {
+            UART_read(uart7handle, &temp_sensor_1[i], sizeof(temp_sensor_1[i]));
+        }
+
+        temp1 = TMP107_DecodeTemperatureResult(&temp_sensor_1[1], &temp_sensor_1[2]);
+        temp2 = TMP107_DecodeTemperatureResult(&temp_sensor_2[1], &temp_sensor_2[2]);
+
+        Task_sleep(1100);
+    }
+
 }
 
 /*
