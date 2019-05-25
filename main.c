@@ -146,22 +146,17 @@ float DecodeTemperatureResult(uint8_t byte1, uint8_t byte2){
     // Get binary twos complement
     //byte1 = ~byte1 + 1;
     //byte2 = ~byte2 + 1;
-    //byte1 = 0b00001000;
-    //byte2 = 0b00011010;
-    byte1 = MSB2LSB(byte1);
-    byte2 = MSB2LSB(byte2);
-    uint16_t Bytes;
-    float temperature;
-    Bytes = byte2 << 8 | byte1;
-    float decimal = Bytes;
-    temperature = decimal * (0.015625);
+    // Swap
+    //byte1 = MSB2LSB(byte1);
+    //byte2 = MSB2LSB(byte2);
+    float decimal_part = (float)byte1 / 64;
+    float int_part = byte2;
+    float temperature = int_part + decimal_part;
     return temperature;
 }
 
 float TMP107_DecodeTemperatureResult(int HByte, int LByte){
     // convert raw byte response to floating point temperature
-    HByte = MSB2LSB(HByte);
-    LByte = MSB2LSB(LByte);
     int Bytes;
     float temperature;
     Bytes = HByte << 8 | LByte;
@@ -245,15 +240,29 @@ Void uartRun() {
     UART_read(uart7handle, &last_response, sizeof(last_response));
 
     if (last_response == addr_response2) {
-        System_printf("2nd response and last response are same!");
+        System_printf("2nd response and last response are same!\n");
     } else {
-        System_printf("BEWARE: 2nd response and last response are NOT the same!");
+        System_printf("BEWARE: 2nd response and last response are NOT the same!\n");
     }
     System_flush();
 
+    // ------------- SETUP CONFIGURATION REGISTERS
+    uint8_t config_settings = 0;
+    uint8_t config_addr = 0xA1;
+    uint8_t global_write = 0b00010001;
+    UART_write(uart7handle, &calibration_byte, sizeof(calibration_byte));
+    UART_write(uart7handle, &global_write, sizeof(global_write));
+    UART_write(uart7handle, &config_addr, sizeof(config_settings));
+    UART_write(uart7handle, &config_settings, sizeof(config_settings));
+    UART_write(uart7handle, &config_settings, sizeof(config_settings));
+
+    // Will get back echo of last 4 bytes
+    for (i=0; i < 5; i++) {
+        UART_read(uart7handle, &echo_response, sizeof(echo_response));
+    }
+
     // ------------- LETS READ A TEMP
-    uint8_t temp_register_byte = 0b00000101;
-    //uint8_t temp_register_byte = 0xA0;
+    uint8_t temp_register_byte = 0b10100000;
     float temp1;
     float temp2;
 
@@ -288,10 +297,12 @@ Void uartRun() {
             UART_read(uart7handle, &temp_sensor_1[i], sizeof(temp_sensor_1[i]));
         }
 
-        temp1 = TMP107_DecodeTemperatureResult(&temp_sensor_1[1], &temp_sensor_1[2]);
-        temp2 = TMP107_DecodeTemperatureResult(&temp_sensor_2[1], &temp_sensor_2[2]);
+        temp1 = TMP107_DecodeTemperatureResult(temp_sensor_1[1], temp_sensor_1[0]);
+        temp2 = TMP107_DecodeTemperatureResult(temp_sensor_2[1], temp_sensor_2[0]);
+        System_printf("Sensor 2: %fºC \t Sensor 1: %fºC\n", temp2, temp1);
+        System_flush();
 
-        Task_sleep(1100);
+        Task_sleep(100);
     }
 
 }
