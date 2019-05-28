@@ -364,7 +364,7 @@ int main(void)
 
 
     // Setup tasks
-    //setup_gui_task();
+    setup_gui_task();
     setup_uart_task();
 
     // Setup Hwis
