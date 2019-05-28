@@ -99,6 +99,9 @@ void toggleLight(int light, int tog){
 // GUI Task Function
 
 Void guiRun() {
+
+    uartRun();
+
     tContext sContext;
     bool bUpdate;
 
@@ -139,22 +142,6 @@ Void guiRun() {
     }
 }
 
-#define MSB2LSB(b) (((b)&1?128:0)|((b)&2?64:0)|((b)&4?32:0)|((b)&8?16:0)|((b)&16?8:0)|((b)&32?4:0)|((b)&64?2:0)|((b)&128?1:0))
-
-float DecodeTemperatureResult(uint8_t byte1, uint8_t byte2){
-    // convert raw byte response to floating point temperature
-    // Get binary twos complement
-    //byte1 = ~byte1 + 1;
-    //byte2 = ~byte2 + 1;
-    // Swap
-    //byte1 = MSB2LSB(byte1);
-    //byte2 = MSB2LSB(byte2);
-    float decimal_part = (float)byte1 / 64;
-    float int_part = byte2;
-    float temperature = int_part + decimal_part;
-    return temperature;
-}
-
 float TMP107_DecodeTemperatureResult(int HByte, int LByte){
     // convert raw byte response to floating point temperature
     int Bytes;
@@ -167,7 +154,7 @@ float TMP107_DecodeTemperatureResult(int HByte, int LByte){
 
 Void uartRun() {
     // ----- Setup UART (for printing data)
-
+    /*
     UART_Params_init(&uart0params); // Setup to defaults
     uart0params.baudRate  = 115200;
     uart0params.readEcho = UART_ECHO_OFF;
@@ -175,6 +162,7 @@ Void uartRun() {
     if (!uart0handle) {
         System_printf("UART Putty did not open");
     }
+    */
 
     // ----- Setup TEMP UART
     UART_Params_init(&uart7params);
@@ -188,9 +176,11 @@ Void uartRun() {
         System_printf("The UART Temp did not open");
     }
 
+    /*
     const unsigned char hello[] = "Address Initialize\n";
     int ret = UART_write(uart0handle, hello, sizeof(hello));
     System_printf("The UART wrote %d bytes\n", ret);
+    */
 
     // Setup connection (address initialize)
     // Send calibration byte
@@ -266,7 +256,8 @@ Void uartRun() {
     float temp1;
     float temp2;
 
-    while(1) {
+    int read = 1;
+    while(read) {
         // Send global read
         // 1. Send calibration byte
         UART_write(uart7handle, &calibration_byte, sizeof(calibration_byte));
@@ -303,6 +294,8 @@ Void uartRun() {
         System_flush();
 
         Task_sleep(100);
+
+        read = 0;
     }
 
 }
@@ -364,8 +357,8 @@ int main(void)
 
 
     // Setup tasks
+    //setup_uart_task();
     setup_gui_task();
-    setup_uart_task();
 
     // Setup Hwis
     setup_adc_hwi();
