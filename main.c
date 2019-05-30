@@ -92,6 +92,8 @@ void toggleLight(int light, int tog){
 // GUI Task Function
 
 Void guiRun() {
+    setup_temp();
+
     tContext sContext;
     bool bUpdate;
 
@@ -124,7 +126,6 @@ Void guiRun() {
 
     // gui functionality
     GUI_init();
-
     while (1) {
         bUpdate = DateTimeDisplayGet();
         if(bUpdate) run_timer();
@@ -177,7 +178,6 @@ int main(void)
     // Set the clocking to run directly from the crystal at 120MHz.
     g_ui32SysClock = SysCtlClockFreqSet((SYSCTL_XTAL_25MHZ | SYSCTL_OSC_MAIN
                    | SYSCTL_USE_PLL |SYSCTL_CFG_VCO_480), 120000000);
-
 
     // Setup tasks
     setup_gui_task();

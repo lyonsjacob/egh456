@@ -5,6 +5,8 @@
  *      Author: jordikitto
  */
 
+#define TEMPTASKSTACKSIZE 1024
+
 // Includes
 #include <stdint.h>
 #include <stdbool.h>
@@ -13,6 +15,8 @@
 #include <ti/sysbios/knl/Task.h>
 #include <ti/sysbios/BIOS.h>
 #include <xdc/runtime/System.h>
+#include <ti/sysbios/knl/Clock.h>
+#include <ti/sysbios/knl/Swi.h>
 
 // UART stuff
 UART_Handle      uart0handle;
@@ -20,10 +24,57 @@ UART_Params      uart0params;
 UART_Handle      uart7handle;
 UART_Params      uart7params;
 
+int i;
+
 // Bytes
 uint8_t calibration_byte = 0b01010101; // AKA 0x55 send data from right to left
 uint8_t last_response;
 uint8_t echo_response;
+
+// Clock
+Void clkTempFxn();
+Clock_Struct clkTempStruct;
+
+// Swi
+Swi_Struct swiTempStruct;
+Swi_Handle swiTempHandle;
+
+// Task
+Task_Struct taskTempStruct;
+Char taskTempStack[TEMPTASKSTACKSIZE];
+
+// Temp readings
+float temp1;
+float temp1_avg;
+float temp2;
+float temp2_avg;
+float temp1_readings[3];
+float temp2_readings[3];
+int readings_index = 0;
+
+// Functions
+Void read_temp_sensors();
+
+
+Void clkTempFxn() {
+    Swi_post(swiTempHandle);
+}
+
+Void swiTempGetFxn() {
+    runTaskTempAvgFxn();
+}
+
+Void runTaskTempAvgFxn() {
+    Task_Params taskParams;
+    Task_Params_init(&taskParams);
+    taskParams.stackSize = TEMPTASKSTACKSIZE;
+    taskParams.stack = &taskTempStack;
+    Task_construct(&taskTempStruct, (Task_FuncPtr)taskTempAvgFxn, &taskParams, NULL);
+}
+
+Void taskTempAvgFxn() {
+    read_temp_sensors();
+}
 
 void setup_temp() {
     /*
@@ -65,7 +116,6 @@ void setup_temp() {
     UART_write(uart7handle, &addr_assign_byte, sizeof(addr_assign_byte));
 
     // Will get back echo of last 3 bytes
-    int i;
     for (i=0; i < 3; i++) {
         UART_read(uart7handle, &echo_response, sizeof(echo_response));
     }
@@ -94,7 +144,6 @@ void setup_temp() {
 
     Task_sleep(7);
 
-    uint8_t last_response;
     UART_read(uart7handle, &last_response, sizeof(last_response));
 
     if (last_response == addr_response2) {
@@ -118,6 +167,20 @@ void setup_temp() {
     for (i=0; i < 5; i++) {
         UART_read(uart7handle, &echo_response, sizeof(echo_response));
     }
+
+    // Setup clock function to read every 0.5 seconds
+    Clock_Params clkParams;
+    Clock_Params_init(&clkParams);
+    clkParams.period = 500;
+    Clock_construct(&clkTempStruct, (Clock_FuncPtr)clkTempFxn, 500, &clkParams);
+    Clock_start(Clock_handle(&clkTempStruct));
+
+    // Setup swi to get values
+    Swi_Params swiParams;
+    Swi_Params_init(&swiParams);
+    // Set priority? Trigger?
+    Swi_construct(&swiTempStruct, (Swi_FuncPtr)swiTempGetFxn, &swiParams, NULL);
+    swiTempHandle = Swi_handle(&swiTempStruct);
 }
 
 float TMP107_DecodeTemperatureResult(int HByte, int LByte){
@@ -133,8 +196,6 @@ float TMP107_DecodeTemperatureResult(int HByte, int LByte){
 void read_temp_sensors() {
     // ------------- LETS READ A TEMP
     uint8_t temp_register_byte = 0b10100000;
-    float temp1;
-    float temp2;
 
     // Send global read
     // 1. Send calibration byte
@@ -147,9 +208,8 @@ void read_temp_sensors() {
     Task_sleep(7);
 
     // Will get back echo of last 3 bytes
-    int i;
     for (i=0; i < 3; i++) {
-        UART_read(uart7handle, &echo_response, sizeof(echo_response));
+        UART_read(uart7handle, &echo_response, 1);
     }
 
     Task_sleep(7);
