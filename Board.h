@@ -94,6 +94,7 @@ extern "C" {
 #define Board_RF430CL330_ADDR       (0x28)
 #define Board_TPL0401_ADDR          (0x40)
 #define Board_OPT3001_ADDR          (0x47)
+#define Board_BMI160_ADDR           (0x69)
 
 #ifdef __cplusplus
 }

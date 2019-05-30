@@ -52,35 +52,253 @@
 /* Example/Board Header files */
 #include "Board.h"
 
+//#include "GUI.h"
+
 #define TASKSTACKSIZE       2048
 
 Task_Struct task0Struct;
 Char task0Stack[TASKSTACKSIZE];
+float convertedLux = 0;
+float convertedAcc = 0;
+
+I2C_Handle      i2c;
+I2C_Params      i2cParams;
+I2C_Transaction i2cTransaction;
 
 // ----------------------- Constants -----------------------
 
 
 // Register addresses
-#define REG_RESULT                      0x00
-#define REG_CONFIGURATION               0x01
+#define LUX_REG_RESULT                      0x00
+#define LUX_REG_CONFIGURATION               0x01
+#define ACC_REG_RESULT                      0x12
+#define ACC_REG_CONFIGURATION               0x00
 
-// Bit values
-#define DATA_RDY_BIT                    0x0080  // Data ready
+
+float getLUX(void)
+{
+    return convertedLux;
+}
 
 /*
- *  ======== taskFxn ========
+ *  ======== luxFxn ========
  *  Task for this function is created statically. See the project's .cfg file.
  */
-Void taskFxn(UArg arg0, UArg arg1)
-{
-    uint16_t        lux;
-    uint8_t         txBuffer[3];
-    uint8_t         rxBuffer[2];
-    I2C_Handle      i2c;
-    I2C_Params      i2cParams;
-    I2C_Transaction i2cTransaction;
 
-    /* Create I2C for usage */
+Void luxFxn(UArg arg0, UArg arg1)
+{
+    //=======CREATE VARIABLES==================
+    uint16_t        lux;
+    int16_t         acc;
+    uint8_t         txBuffer[3];
+    uint8_t         rxBuffer[6];
+
+    //=====CODE FOR INITIATING LIGH REG========
+
+    txBuffer[0] = LUX_REG_CONFIGURATION;
+    txBuffer[1] = 0xC4;
+    txBuffer[2] = 0x10;
+    i2cTransaction.slaveAddress = Board_OPT3001_ADDR;
+    i2cTransaction.writeBuf = txBuffer;
+    i2cTransaction.writeCount = 3;
+    i2cTransaction.readBuf = NULL;
+    i2cTransaction.readCount = 0;
+
+    if (!I2C_transfer(i2c, &i2cTransaction)) {
+        System_abort("Error Initiating Lux Sensor\n");
+    }
+    else {
+        System_printf("Lux Sensor Configured!\n");
+    }
+
+    //======CODE FOR CONFIGURING ACC=============
+
+    txBuffer[0] = 0x7E; //Power mode set register
+    i2cTransaction.slaveAddress = Board_BMI160_ADDR;
+    i2cTransaction.writeBuf = txBuffer;
+    i2cTransaction.writeCount = 1;
+    i2cTransaction.readBuf = rxBuffer;
+    i2cTransaction.readCount = 1;
+
+    if (!I2C_transfer(i2c, &i2cTransaction)) {
+        System_abort("Error Configuring Accelorometer\n");
+    }
+    else {
+        System_printf("Accelerometer Configured!\n");
+    }
+
+    rxBuffer[0] = 0b00010001; //Normal power mode
+    txBuffer[1] = rxBuffer[0];
+
+    i2cTransaction.writeBuf = txBuffer;
+    i2cTransaction.writeCount = 2;
+    i2cTransaction.readBuf = NULL;
+    i2cTransaction.readCount = 0;
+
+    if (!I2C_transfer(i2c, &i2cTransaction)) {
+        System_abort("Error Changing Accelorometer\n");
+    }
+    else {
+        System_printf("Accelerometer Changed!\n");
+    }
+
+    //======CODE TO READ LUX AND ACC SENSORS============
+
+
+
+    char luxStr[40];
+    char accStr[40];
+    uint16_t result, exponent;
+
+    while(1) {
+
+        txBuffer[0] = LUX_REG_RESULT;
+        i2cTransaction.slaveAddress = Board_OPT3001_ADDR;
+        i2cTransaction.writeBuf = txBuffer;
+        i2cTransaction.writeCount = 1;
+        i2cTransaction.readBuf = rxBuffer;
+        i2cTransaction.readCount = 2;
+
+        if (I2C_transfer(i2c, &i2cTransaction)) {
+
+            lux = rxBuffer[0] << 8 | rxBuffer[1];
+            result = lux & 0x0FFF;
+            exponent = (lux & 0xF000) >> 12;
+            convertedLux = result * (0.01 * exp2(exponent));
+            sprintf(luxStr, "Lux: %5.2f\n", convertedLux);
+            System_printf("%s\n", luxStr);
+//            if(convertedLux < 5){
+//                changeDisplayToNight();
+//            }
+//            if(covertedLux >5){
+//                changeDisplayToDay();
+//            }
+
+        }
+        else {
+            System_printf("I2C Bus fault\n");
+        }
+
+        txBuffer[0] = 0x12; //First acc reading register
+        i2cTransaction.slaveAddress = Board_BMI160_ADDR;
+        i2cTransaction.writeBuf = txBuffer;
+        i2cTransaction.writeCount = 1;
+        i2cTransaction.readBuf = rxBuffer;
+        i2cTransaction.readCount = 6;
+
+        if (I2C_transfer(i2c, &i2cTransaction)) {
+            int i;
+            for(i = 0; i < 6; i += 2){
+                acc = (int16_t)((rxBuffer[i + 1] << 8) | rxBuffer[i]);
+                convertedAcc = (acc * 0.061)/1000;
+                sprintf(accStr, "Itteration: %d, Acc: %5.2f\n", i, convertedAcc);
+                System_printf("%s\n", accStr);
+            }
+        }
+        else {
+            System_printf("I2C Bus fault\n");
+        }
+        System_printf("\n");
+        System_flush();
+        Task_sleep(50);
+    }
+
+    //==========================================
+}
+
+///*
+// *  ======== accFxn ========
+// *  Task for this function is created statically. See the project's .cfg file.
+// */
+Void accFxn(UArg arg0, UArg arg1)
+{
+    //=======CREATE VARIABLES==================
+    int16_t         acc;
+    uint8_t         txBuffer[3];
+    uint8_t         rxBuffer[6];
+
+    //======CODE FOR CONFIGURING ACC=============
+
+    txBuffer[0] = 0x7E; //Power mode set register
+    i2cTransaction.slaveAddress = Board_BMI160_ADDR;
+    i2cTransaction.writeBuf = txBuffer;
+    i2cTransaction.writeCount = 1;
+    i2cTransaction.readBuf = rxBuffer;
+    i2cTransaction.readCount = 1;
+
+    if (!I2C_transfer(i2c, &i2cTransaction)) {
+        System_abort("Error Configuring Accelorometer\n");
+    }
+    else {
+        System_printf("Accelerometer Configured!\n");
+    }
+
+    rxBuffer[0] = 0b00010001; //Normal power mode
+    txBuffer[1] = rxBuffer[0];
+
+    i2cTransaction.writeBuf = txBuffer;
+    i2cTransaction.writeCount = 2;
+    i2cTransaction.readBuf = NULL;
+    i2cTransaction.readCount = 0;
+
+    if (!I2C_transfer(i2c, &i2cTransaction)) {
+        System_abort("Error Changing Accelorometer\n");
+    }
+    else {
+        System_printf("Accelerometer Changed!\n");
+    }
+
+    //=======CODE TO CHECK PMU_STATUS============
+
+    txBuffer[0] = 0x03; //PMU_STATUS register
+    i2cTransaction.writeBuf = txBuffer;
+    i2cTransaction.writeCount = 1;
+    i2cTransaction.readBuf = rxBuffer;
+    i2cTransaction.readCount = 1;
+
+    if (!I2C_transfer(i2c, &i2cTransaction)) {
+        System_abort("Error Reading PMU_STATUS\n");
+    }
+    else {
+        System_printf("PMU_STATUS: %x\n", rxBuffer[0]);
+    }
+
+    //=========CODE TO READ ACC==================
+
+    txBuffer[0] = 0x12; //First acc reading register
+    i2cTransaction.slaveAddress = Board_BMI160_ADDR;
+    i2cTransaction.writeBuf = txBuffer;
+    i2cTransaction.writeCount = 1;
+    i2cTransaction.readBuf = rxBuffer;
+    i2cTransaction.readCount = 6;
+
+    char accStr[40];
+
+    while(1) {
+        if (I2C_transfer(i2c, &i2cTransaction)) {
+            int i;
+            for(i = 0; i < 6; i += 2){
+                acc = (int16_t)((rxBuffer[i + 1] << 8) | rxBuffer[i]);
+                convertedAcc = (acc * 0.244)/1000;
+                sprintf(accStr, "Itteration: %d, Acc: %5.2f\n", i, convertedAcc);
+                System_printf("%s\n", accStr);
+            }
+        }
+        else {
+            System_printf("I2C Bus fault\n");
+        }
+        System_printf("\n");
+        System_flush();
+        Task_sleep(50);
+    }
+
+    //===========================================
+}
+
+void setupI2C2( void )
+{
+    //=======CREATE I2C FOR USAGE===============
+
     I2C_Params_init(&i2cParams);
     i2cParams.bitRate = I2C_400kHz;
     i2c = I2C_open(Board_I2C_LUX, &i2cParams);
@@ -90,54 +308,6 @@ Void taskFxn(UArg arg0, UArg arg1)
     else {
         System_printf("I2C Initialized!\n");
     }
-
-//    /* Point to the T ambient register and read its 2 bytes */
-//    txBuffer[0] = REG_CONFIGURATION;
-//    txBuffer[1] = 0xC4;
-//    txBuffer[2] = 0x10;
-//    i2cTransaction.slaveAddress = Board_OPT3001_ADDR;
-//    i2cTransaction.writeBuf = txBuffer;
-//    i2cTransaction.writeCount = 3;
-//    i2cTransaction.readBuf = NULL;
-//    i2cTransaction.readCount = 0;
-//
-//    if (!I2C_transfer(i2c, &i2cTransaction)) {
-//        System_printf("No\n");
-//    }
-
-    txBuffer[0] = REG_RESULT;
-    i2cTransaction.slaveAddress = Board_OPT3001_ADDR;
-    i2cTransaction.writeBuf = txBuffer;
-    i2cTransaction.writeCount = 1;
-    i2cTransaction.readBuf = rxBuffer;
-    i2cTransaction.readCount = 2;
-
-    float convertedLux = 0;
-    char luxStr[40];
-
-    /* Take 20 samples and print them out onto the console */
-    while(1) {
-        if (I2C_transfer(i2c, &i2cTransaction)) {
-
-            lux = (rxBuffer[0] << 6) | (rxBuffer[1] >> 2);
-            convertedLux = lux * 0.1;
-            sprintf(luxStr, "Lux: %5.2f\n", convertedLux);
-            System_printf("%s\n", luxStr);
-
-        }
-        else {
-            System_printf("I2C Bus fault\n");
-        }
-
-        System_flush();
-        Task_sleep(500);
-    }
-
-    /* Deinitialized I2C */
-    I2C_close(i2c);
-    System_printf("I2C closed!\n");
-
-    System_flush();
 }
 
 /*
@@ -152,19 +322,13 @@ int main(void)
     Board_initGPIO();
     Board_initI2C();
 
-    /* Construct tmp006 Task thread */
+    setupI2C2();
+
+    /* Construct opt3001 Task thread */
     Task_Params_init(&taskParams);
     taskParams.stackSize = TASKSTACKSIZE;
     taskParams.stack = &task0Stack;
-    Task_construct(&task0Struct, (Task_FuncPtr)taskFxn, &taskParams, NULL);
-
-    /* Turn on user LED */
-    GPIO_write(Board_LED0, Board_LED_ON);
-
-    System_printf("Starting the I2C example\nSystem provider is set to SysMin."
-                  " Halt the target to view any SysMin contents in ROV.\n");
-    /* SysMin will only print to the console when you call flush or exit */
-    System_flush();
+    Task_construct(&task0Struct, (Task_FuncPtr)luxFxn, &taskParams, NULL);
 
     /* Start BIOS */
     BIOS_start();
