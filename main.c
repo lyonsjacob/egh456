@@ -92,8 +92,6 @@ void toggleLight(int light, int tog){
 // GUI Task Function
 
 Void guiRun() {
-    setup_temp();
-
     tContext sContext;
     bool bUpdate;
 
@@ -180,6 +178,7 @@ int main(void)
                    | SYSCTL_USE_PLL |SYSCTL_CFG_VCO_480), 120000000);
 
     // Setup tasks
+    setup_temp();
     setup_gui_task();
 
     // Setup Hwis

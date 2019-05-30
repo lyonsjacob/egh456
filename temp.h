@@ -11,6 +11,7 @@
 
 // Setup
 void setup_temp();
+void setup_temp_internal();
 
 // Usage
 void read_temp_sensors();

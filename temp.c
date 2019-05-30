@@ -5,7 +5,7 @@
  *      Author: jordikitto
  */
 
-#define TEMPTASKSTACKSIZE 1024
+#define TEMPTASKSTACKSIZE 512
 
 // Includes
 #include <stdint.h>
@@ -17,6 +17,7 @@
 #include <xdc/runtime/System.h>
 #include <ti/sysbios/knl/Clock.h>
 #include <ti/sysbios/knl/Swi.h>
+#include <ti/sysbios/hal/Hwi.h>
 
 // UART stuff
 UART_Handle      uart0handle;
@@ -41,7 +42,9 @@ Swi_Handle swiTempHandle;
 
 // Task
 Task_Struct taskTempStruct;
+Task_Struct taskTempSetupStruct;
 Char taskTempStack[TEMPTASKSTACKSIZE];
+Char taskTempSetupStack[TEMPTASKSTACKSIZE];
 
 // Temp readings
 float temp1;
@@ -60,8 +63,14 @@ Void clkTempFxn() {
     Swi_post(swiTempHandle);
 }
 
-Void swiTempGetFxn() {
-    runTaskTempAvgFxn();
+Void taskTempAvgFxn() {
+    UInt taskKey = Task_disable();
+    UInt swiKey = Swi_disable();
+    UInt hwiKey = Hwi_disable();
+    read_temp_sensors();
+    Hwi_restore(hwiKey);
+    Swi_restore(swiKey);
+    Task_restore(taskKey);
 }
 
 Void runTaskTempAvgFxn() {
@@ -69,14 +78,15 @@ Void runTaskTempAvgFxn() {
     Task_Params_init(&taskParams);
     taskParams.stackSize = TEMPTASKSTACKSIZE;
     taskParams.stack = &taskTempStack;
+    taskParams.priority = 2;
     Task_construct(&taskTempStruct, (Task_FuncPtr)taskTempAvgFxn, &taskParams, NULL);
 }
 
-Void taskTempAvgFxn() {
-    read_temp_sensors();
+Void swiTempGetFxn() {
+    runTaskTempAvgFxn();
 }
 
-void setup_temp() {
+void setup_temp_internal() {
     /*
     // ----- Setup UART (for printing data)
     UART_Params_init(&uart0params); // Setup to defaults
@@ -90,6 +100,8 @@ void setup_temp() {
     int ret = UART_write(uart0handle, hello, sizeof(hello));
     System_printf("The UART wrote %d bytes\n", ret);
     */
+
+    UInt taskKey = Task_disable();
 
     // ----- Setup TEMP UART
     UART_Params_init(&uart7params);
@@ -130,7 +142,7 @@ void setup_temp() {
     uint8_t addr_response2;
     UART_read(uart7handle, &addr_response2, sizeof(addr_response2));
 
-    Task_sleep(1250);
+    Task_sleep(1500);
 
     // Send Last Device poll
     UART_write(uart7handle, &calibration_byte, sizeof(calibration_byte));
@@ -168,6 +180,13 @@ void setup_temp() {
         UART_read(uart7handle, &echo_response, sizeof(echo_response));
     }
 
+    // Setup swi to get values
+    Swi_Params swiParams;
+    Swi_Params_init(&swiParams);
+    // Set priority? Trigger?
+    Swi_construct(&swiTempStruct, (Swi_FuncPtr)swiTempGetFxn, &swiParams, NULL);
+    swiTempHandle = Swi_handle(&swiTempStruct);
+
     // Setup clock function to read every 0.5 seconds
     Clock_Params clkParams;
     Clock_Params_init(&clkParams);
@@ -175,12 +194,16 @@ void setup_temp() {
     Clock_construct(&clkTempStruct, (Clock_FuncPtr)clkTempFxn, 500, &clkParams);
     Clock_start(Clock_handle(&clkTempStruct));
 
-    // Setup swi to get values
-    Swi_Params swiParams;
-    Swi_Params_init(&swiParams);
-    // Set priority? Trigger?
-    Swi_construct(&swiTempStruct, (Swi_FuncPtr)swiTempGetFxn, &swiParams, NULL);
-    swiTempHandle = Swi_handle(&swiTempStruct);
+    Task_restore(taskKey);
+}
+
+void setup_temp() {
+    Task_Params taskParams;
+    Task_Params_init(&taskParams);
+    taskParams.stackSize = TEMPTASKSTACKSIZE;
+    taskParams.stack = &taskTempSetupStack;
+    taskParams.priority = 10;
+    Task_construct(&taskTempSetupStruct, (Task_FuncPtr)setup_temp_internal, &taskParams, NULL);
 }
 
 float TMP107_DecodeTemperatureResult(int HByte, int LByte){
