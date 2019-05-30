@@ -80,6 +80,7 @@ typedef enum EK_TM4C1294XL_GPIOName {
     DIRECTION,
     BRAKE,
     DVR_Enable,
+    PWM_MODE,
     EK_TM4C1294XL_D1,
     EK_TM4C1294XL_D2,
     EK_TM4C1294XL_D3,

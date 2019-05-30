@@ -186,11 +186,11 @@ void MotorControlSwi(UArg arg0, UArg arg1)
     Motor_Control.currentAccelerationRadss = ((Motor_Control.lastRPM -Motor_Control.currentRPM)*0.10472)*10;
 
     /*Kick start motor*/
-//    if(!Motor_Control.currentRPM && Motor_Control.requiredRPM)
-//    {
-//        StartMotor();
-//        return;
-//    }
+    if(!Motor_Control.currentRPM && Motor_Control.requiredRPM)
+    {
+        StartMotor();
+        return;
+    }
 
 
     if(Motor_Control.currentAccelerationRadss < Motor_Control.MaxAcceleration || Motor_Control.currentAccelerationRadss > -Motor_Control.MaxAcceleration){

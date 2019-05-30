@@ -315,6 +315,8 @@ GPIO_PinConfig gpioPinConfigs[] = {
 
     /*DVR_Enable*/
     GPIOTiva_PC_6 | GPIO_CFG_OUT_STD | GPIO_CFG_OUT_HIGH,
+    /*PWM_MODE*/
+    GPIOTiva_PL_0 | GPIO_CFG_INPUT,
 
     /* Output pins */
     /* EK_TM4C1294XL_USR_D1 */
