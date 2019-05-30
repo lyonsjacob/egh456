@@ -58,7 +58,7 @@
 #include "GUI.h"
 #include "temp.h"
 
-#define TASKSTACKSIZE  4024
+#define TASKSTACKSIZE  2012
 //#define UARTTASKSTACKSIZE 768
 
 uint32_t g_ui32SysClock;
@@ -94,6 +94,7 @@ void toggleLight(int light, int tog){
 Void guiRun() {
     tContext sContext;
     bool bUpdate;
+
 
     FPUEnable();
     FPULazyStackingEnable();
@@ -151,9 +152,10 @@ void setup_gui_task(){
     Task_Params gui_params;
     Task_Params_init(&gui_params);
     gui_params.stackSize = TASKSTACKSIZE;
-    gui_params.stack = &gui_stack;
+    //gui_params.stack = &gui_stack;
     gui_params.priority = 1;
-    Task_construct(&gui_struct, (Task_FuncPtr)guiRun, &gui_params, NULL);
+    //Task_construct(&gui_struct, (Task_FuncPtr)guiRun, &gui_params, NULL);
+    Task_create((Task_FuncPtr)guiRun, &gui_params, NULL);
 }
 
 int main(void)

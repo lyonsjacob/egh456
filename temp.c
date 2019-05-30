@@ -6,6 +6,7 @@
  */
 
 #define TEMPTASKSTACKSIZE 512
+#define MAXREADINGSAVG 3
 
 // Includes
 #include <stdint.h>
@@ -26,6 +27,7 @@ UART_Handle      uart7handle;
 UART_Params      uart7params;
 
 int i;
+int isSetup = 0;
 
 // Bytes
 uint8_t calibration_byte = 0b01010101; // AKA 0x55 send data from right to left
@@ -40,46 +42,32 @@ Clock_Struct clkTempStruct;
 Swi_Struct swiTempStruct;
 Swi_Handle swiTempHandle;
 
-// Task
-Task_Struct taskTempStruct;
-Task_Struct taskTempSetupStruct;
-Char taskTempStack[TEMPTASKSTACKSIZE];
-Char taskTempSetupStack[TEMPTASKSTACKSIZE];
-
 // Temp readings
 float temp1;
 float temp1_avg;
 float temp2;
 float temp2_avg;
-float temp1_readings[3];
-float temp2_readings[3];
+float temp1_readings[MAXREADINGSAVG];
+float temp2_readings[MAXREADINGSAVG];
 int readings_index = 0;
 
 // Functions
 Void read_temp_sensors();
-
 
 Void clkTempFxn() {
     Swi_post(swiTempHandle);
 }
 
 Void taskTempAvgFxn() {
-    UInt taskKey = Task_disable();
-    UInt swiKey = Swi_disable();
-    UInt hwiKey = Hwi_disable();
     read_temp_sensors();
-    Hwi_restore(hwiKey);
-    Swi_restore(swiKey);
-    Task_restore(taskKey);
 }
 
 Void runTaskTempAvgFxn() {
     Task_Params taskParams;
     Task_Params_init(&taskParams);
     taskParams.stackSize = TEMPTASKSTACKSIZE;
-    taskParams.stack = &taskTempStack;
-    taskParams.priority = 2;
-    Task_construct(&taskTempStruct, (Task_FuncPtr)taskTempAvgFxn, &taskParams, NULL);
+    taskParams.priority = 3;
+    Task_create((Task_FuncPtr)taskTempAvgFxn, &taskParams, NULL);
 }
 
 Void swiTempGetFxn() {
@@ -87,6 +75,8 @@ Void swiTempGetFxn() {
 }
 
 void setup_temp_internal() {
+    UInt taskKey = Task_disable();
+    //UInt swiKey = Swi_disable();
     /*
     // ----- Setup UART (for printing data)
     UART_Params_init(&uart0params); // Setup to defaults
@@ -100,8 +90,6 @@ void setup_temp_internal() {
     int ret = UART_write(uart0handle, hello, sizeof(hello));
     System_printf("The UART wrote %d bytes\n", ret);
     */
-
-    UInt taskKey = Task_disable();
 
     // ----- Setup TEMP UART
     UART_Params_init(&uart7params);
@@ -131,6 +119,8 @@ void setup_temp_internal() {
     for (i=0; i < 3; i++) {
         UART_read(uart7handle, &echo_response, sizeof(echo_response));
     }
+
+    Task_sleep(7);
 
     // Read address responses of temp sensor 1
     uint8_t addr_response1;
@@ -180,6 +170,7 @@ void setup_temp_internal() {
         UART_read(uart7handle, &echo_response, sizeof(echo_response));
     }
 
+
     // Setup swi to get values
     Swi_Params swiParams;
     Swi_Params_init(&swiParams);
@@ -194,16 +185,20 @@ void setup_temp_internal() {
     Clock_construct(&clkTempStruct, (Clock_FuncPtr)clkTempFxn, 500, &clkParams);
     Clock_start(Clock_handle(&clkTempStruct));
 
+    System_printf("Temperature sensors setup\n");
+
+    Task_sleep(1000);
+    read_temp_sensors();
     Task_restore(taskKey);
+    //Swi_restore(swiKey);
 }
 
 void setup_temp() {
     Task_Params taskParams;
     Task_Params_init(&taskParams);
     taskParams.stackSize = TEMPTASKSTACKSIZE;
-    taskParams.stack = &taskTempSetupStack;
     taskParams.priority = 10;
-    Task_construct(&taskTempSetupStruct, (Task_FuncPtr)setup_temp_internal, &taskParams, NULL);
+    Task_create((Task_FuncPtr)setup_temp_internal, &taskParams, NULL);
 }
 
 float TMP107_DecodeTemperatureResult(int HByte, int LByte){
@@ -217,6 +212,8 @@ float TMP107_DecodeTemperatureResult(int HByte, int LByte){
 }
 
 void read_temp_sensors() {
+    UInt taskKey = Task_disable();
+    //System_printf("Reading sensors\n");
     // ------------- LETS READ A TEMP
     uint8_t temp_register_byte = 0b10100000;
 
@@ -252,7 +249,26 @@ void read_temp_sensors() {
 
     temp1 = TMP107_DecodeTemperatureResult(temp_sensor_1[1], temp_sensor_1[0]);
     temp2 = TMP107_DecodeTemperatureResult(temp_sensor_2[1], temp_sensor_2[0]);
-    System_printf("Sensor 2: %fºC \t Sensor 1: %fºC\n", temp2, temp1);
-    System_flush();
+
+    if (readings_index < MAXREADINGSAVG) { // Add until we have enough
+        temp1_readings[readings_index] = temp1;
+        temp2_readings[readings_index] = temp2;
+        readings_index++;
+    } else { // Once we have enough, get avg and print
+        float temp1_sum = 0;
+        float temp2_sum = 0;
+        for (i=0; i<MAXREADINGSAVG; i++) {
+            temp1_sum += temp1_readings[i];
+            temp2_sum += temp2_readings[i];
+        }
+        temp1_avg = temp1_sum / MAXREADINGSAVG;
+        temp2_avg = temp2_sum / MAXREADINGSAVG;
+        System_printf("Sensor 2: %fºC \t Sensor 1: %fºC\n", temp2_avg, temp1_avg);
+        System_flush();
+
+        // Reset array
+        readings_index = 0;
+    }
+    Task_restore(taskKey);
 }
 
