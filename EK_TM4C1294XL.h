@@ -71,8 +71,18 @@ typedef enum EK_TM4C1294XL_EMACName {
 typedef enum EK_TM4C1294XL_GPIOName {
     EK_TM4C1294XL_USR_SW1 = 0,
     EK_TM4C1294XL_USR_SW2,
+    HALL_A,
+    HALL_B,
+    HALL_C,
+    STATE0,
+    STATE1,
+    STATE2,
+    DIRECTION,
+    BRAKE,
+    DVR_Enable,
     EK_TM4C1294XL_D1,
     EK_TM4C1294XL_D2,
+    EK_TM4C1294XL_D3,
 
     EK_TM4C1294XL_GPIOCOUNT
 } EK_TM4C1294XL_GPIOName;
@@ -94,11 +104,9 @@ typedef enum EK_TM4C1294XL_I2CName {
  *  @brief  Enum of PWM names on the EK_TM4C1294XL dev board
  */
 typedef enum EK_TM4C1294XL_PWMName {
-    EK_TM4C1294XL_PWM0 = 0,
-
-    EK_TM4C1294XL_PWMCOUNT
+EK_TM4C1294XL_PWM1 = 0,
+EK_TM4C1294XL_PWMCOUNT
 } EK_TM4C1294XL_PWMName;
-
 /*!
  *  @def    EK_TM4C1294XL_SDSPIName
  *  @brief  Enum of SDSPI names on the EK_TM4C1294XL dev board
