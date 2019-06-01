@@ -285,10 +285,10 @@ Void calculate_average() {
 }
 
 int get_temp1() {
-    return (int*)temp1_avg;
+    return (int)temp1_avg;
 }
 
 int get_temp2() {
-    return (int*)temp2_avg;
+    return (int)temp2_avg;
 }
 
