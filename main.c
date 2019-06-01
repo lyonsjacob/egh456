@@ -83,15 +83,15 @@
 //#include "ACC.h"
 #include <MotorControl.h>
 
-#define TASKSTACKSIZE  4096*2
+#define TASKSTACKSIZE  512
 
 uint32_t g_ui32SysClock;
 
-Task_Struct gui_struct;
-Char gui_stack[TASKSTACKSIZE];
 
 I2C_Handle      i2c;
 I2C_Params      gui_params;
+I2C_Params      lux_params;
+I2C_Params      acc_params;
 I2C_Transaction i2cTransaction;
 
 #ifdef ewarm
@@ -124,10 +124,10 @@ Void guiRun() {
     GrContextInit(&sContext, &g_sKentec320x240x16_SSD2119);
 
     // screen
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_UDMA);
-    SysCtlDelay(10);
-    uDMAControlBaseSet(&psDMAControlTable[0]);
-    uDMAEnable();
+//    SysCtlPeripheralEnable(SYSCTL_PERIPH_UDMA);
+//    SysCtlDelay(10);
+//    uDMAControlBaseSet(&psDMAControlTable[0]);
+//    uDMAEnable();
     TouchScreenInit(g_ui32SysClock);
     TouchScreenCallbackSet(WidgetPointerMessage);
 
@@ -146,32 +146,42 @@ Void guiRun() {
     // gui functionality
     GUI_init();
 
+    while (1) {
+        bUpdate = DateTimeDisplayGet();
+        if(bUpdate) run_timer();
+        WidgetMessageQueueProcess();
+        Task_sleep(100);
+    }
+}
+
+// LUX Task Function
+Void luxRun() {
 
     //=====CODE FOR INITIATING LIGH REG========
 
     initLux();
 
+    while (1) {
+        readLux();
+        System_flush();
+        Task_sleep(10);
+    }
+}
+
+// ACC Task Function
+Void accRun() {
+
     //======CODE FOR CONFIGURING ACC=============
 
     initAcc();
 
-    int count = 0;
-
     while (1) {
-
-        if(count == 500){
-            count = 0;
-            readLux();
-            readAcc();
-        }
-
-        bUpdate = DateTimeDisplayGet();
-        if(bUpdate) run_timer();
-        WidgetMessageQueueProcess();
+        readAcc();
         System_flush();
-        count++;
+        Task_sleep(10);
     }
 }
+
 
 /*
  *  ======== main ========
@@ -192,9 +202,25 @@ void setup_adc_hwi(){
 void setup_gui_task(){
     Task_Params gui_params;
     Task_Params_init(&gui_params);
-    gui_params.stackSize = TASKSTACKSIZE;
-    gui_params.stack = &gui_stack;
-    Task_construct(&gui_struct, (Task_FuncPtr)guiRun, &gui_params, NULL);
+    gui_params.stackSize = 1024;
+    gui_params.priority = 1;
+    Task_create((Task_FuncPtr)guiRun, &gui_params, NULL);
+}
+
+void setup_lux_task(){
+    Task_Params lux_params;
+    Task_Params_init(&lux_params);
+    lux_params.stackSize = 1024;
+    lux_params.priority = 2;
+    Task_create((Task_FuncPtr)luxRun, &lux_params, NULL);
+}
+
+void setup_acc_task(){
+    Task_Params acc_params;
+    Task_Params_init(&acc_params);
+    acc_params.stackSize = 1024;
+    acc_params.priority = 3;
+    Task_create((Task_FuncPtr)accRun, &acc_params, NULL);
 }
 
 void setupI2C2( void )
@@ -232,7 +258,9 @@ int main(void)
 
     setupI2C2();
     // Setup tasks
-    setup_gui_task();
+//    setup_gui_task();
+    setup_lux_task();
+//    setup_acc_task();
 
 
     // Setup Hwis
