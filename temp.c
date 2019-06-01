@@ -273,8 +273,8 @@ Void calculate_average() {
         if (readings_count >= MAXREADINGSAVG) {
             temp1_avg = temp1 / MAXREADINGSAVG;
             temp2_avg = temp2 / MAXREADINGSAVG;
-            System_printf("Sensor 2: %fºC \t Sensor 1: %fºC\n", temp2_avg, temp1_avg);
-            System_flush();
+            //System_printf("Sensor 2: %fºC \t Sensor 1: %fºC\n", temp2_avg, temp1_avg);
+            //System_flush();
 
             // Reset
             readings_count = 0;
