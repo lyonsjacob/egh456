@@ -58,23 +58,7 @@
 #include "GUI.h"
 #include "temp.h"
 
-#define TASKSTACKSIZE  2012
-//#define UARTTASKSTACKSIZE 768
-
 uint32_t g_ui32SysClock;
-
-Task_Struct gui_struct;
-Char gui_stack[TASKSTACKSIZE];
-
-#ifdef ewarm
-#pragma data_alignment=1024
-tDMAControlTable psDMAControlTable[64];
-#elif defined(ccs)
-#pragma DATA_ALIGN(psDMAControlTable, 1024)
-tDMAControlTable psDMAControlTable[64];
-#else
-tDMAControlTable psDMAControlTable[64] __attribute__ ((aligned(1024)));
-#endif
 
 // TOGGLE GPIO LIGHTS // off = 0 on = 1
 void toggleLight(int light, int tog){
@@ -90,25 +74,24 @@ void toggleLight(int light, int tog){
  */
 
 // GUI Task Function
-
 Void guiRun() {
 	// add hwi disable line by line until it crashes?
     tContext sContext;
     bool bUpdate;
 
 
-    FPUEnable();
-    FPULazyStackingEnable();
+    //FPUEnable();
+    //FPULazyStackingEnable();
 
     // graphics
     Kentec320x240x16_SSD2119Init(g_ui32SysClock);
     GrContextInit(&sContext, &g_sKentec320x240x16_SSD2119);
 
     // screen
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_UDMA);
-    SysCtlDelay(10);
-    uDMAControlBaseSet(&psDMAControlTable[0]);
-    uDMAEnable();
+    //SysCtlPeripheralEnable(SYSCTL_PERIPH_UDMA);
+    //SysCtlDelay(10);
+    //uDMAControlBaseSet(&psDMAControlTable[0]);
+    //uDMAEnable();
     TouchScreenInit(g_ui32SysClock);
     TouchScreenCallbackSet(WidgetPointerMessage);
 
@@ -127,11 +110,10 @@ Void guiRun() {
     // gui functionality
     GUI_init();
     while (1) {
-        UInt taskKey = Task_disable();
         bUpdate = DateTimeDisplayGet();
         if(bUpdate) run_timer();
         WidgetMessageQueueProcess();
-        Task_restore(taskKey);
+        Task_sleep(100);
     }
 }
 
@@ -154,10 +136,8 @@ void setup_adc_hwi(){
 void setup_gui_task(){
     Task_Params gui_params;
     Task_Params_init(&gui_params);
-    gui_params.stackSize = TASKSTACKSIZE;
-    //gui_params.stack = &gui_stack;
     gui_params.priority = 1;
-    //Task_construct(&gui_struct, (Task_FuncPtr)guiRun, &gui_params, NULL);
+    gui_params.stackSize = 1024;
     Task_create((Task_FuncPtr)guiRun, &gui_params, NULL);
 }
 
