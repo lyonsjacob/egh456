@@ -97,6 +97,8 @@ void setup_temp_internal() {
         System_printf("The UART Temp did not open");
     }
 
+    Task_sleep(10);
+
     // Setup connection (address initialize)
     // Send calibration byte
     UART_write(uart7handle, &calibration_byte, sizeof(calibration_byte));
