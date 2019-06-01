@@ -92,6 +92,7 @@ void toggleLight(int light, int tog){
 // GUI Task Function
 
 Void guiRun() {
+	// add hwi disable line by line until it crashes?
     tContext sContext;
     bool bUpdate;
 
@@ -126,9 +127,11 @@ Void guiRun() {
     // gui functionality
     GUI_init();
     while (1) {
+        UInt taskKey = Task_disable();
         bUpdate = DateTimeDisplayGet();
         if(bUpdate) run_timer();
         WidgetMessageQueueProcess();
+        Task_restore(taskKey);
     }
 }
 
