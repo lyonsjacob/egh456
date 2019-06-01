@@ -86,11 +86,7 @@ void HALL_A_HWI(unsigned int index)
     // Clear the asserted interrupts.
     //
     GPIO_clearInt(Board_HALL_A);
-    if(GPIO_read(Board_HALL_A)){
-        GPIO_write(Board_STATE1, Board_ON);
-    }else{
-        GPIO_write(Board_STATE1, Board_OFF);
-    }
+    GPIO_write(Board_STATE1, GPIO_read(Board_HALL_A));
 }
 
 
@@ -102,11 +98,7 @@ void HALL_B_HWI(unsigned int index)
     // Clear the asserted interrupts.
     //
     GPIO_clearInt(Board_HALL_B);
-    if(GPIO_read(Board_HALL_B)){
-        GPIO_write(Board_STATE2, Board_ON);
-    }else{
-        GPIO_write(Board_STATE2, Board_OFF);
-    }
+    GPIO_write(Board_STATE2, GPIO_read(Board_HALL_B));
 }
 
 
@@ -118,11 +110,7 @@ void HALL_C_HWI(unsigned int index)
     // Clear the asserted interrupts.
     //
     GPIO_clearInt(Board_HALL_C);
-    if(GPIO_read(Board_HALL_C)){
-        GPIO_write(Board_STATE0, Board_ON);
-    }else{
-        GPIO_write(Board_STATE0, Board_OFF);
-    }
+    GPIO_write(Board_STATE0, GPIO_read(Board_HALL_C));
 }
 
 void clk0Fxn(UArg arg0)
