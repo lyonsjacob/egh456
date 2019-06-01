@@ -12,7 +12,29 @@
 
 /* BIOS Header files */
 #include <ti/sysbios/BIOS.h>
-#include <ti/sysbios/knl/Task.h>
+#include <ti/sysbios/knl/Task.h>//int main(void)
+//{
+//    Task_Params taskParams;
+//
+//    /* Call board init functions */
+//    Board_initGeneral();
+//    Board_initGPIO();
+//    Board_initI2C();
+//
+//    setupI2C2();
+//
+//    /* Construct opt3001 Task thread */
+//    Task_Params_init(&taskParams);
+//    taskParams.stackSize = TASKSTACKSIZE;
+//    taskParams.stack = &task0Stack;
+//    Task_construct(&task0Struct, (Task_FuncPtr)luxFxn, &taskParams, NULL);
+//
+//    /* Start BIOS */
+//    BIOS_start();
+//
+//    return (0);
+//}
+
 #include <xdc/runtime/Error.h>
 #include <xdc/runtime/System.h>
 
