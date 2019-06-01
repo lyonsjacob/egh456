@@ -24,7 +24,7 @@
 // #include <ti/drivers/I2C.h>
 // #include <ti/drivers/SDSPI.h>
 // #include <ti/drivers/SPI.h>
-// #include <ti/drivers/UART.h>
+#include <ti/drivers/UART.h>
 // #include <ti/drivers/USBMSCHFatFs.h>
 // #include <ti/drivers/Watchdog.h>
 // #include <ti/drivers/WiFi.h>
@@ -33,10 +33,10 @@
 #include "driverlib/debug.h"
 #include "driverlib/gpio.h"
 #include "driverlib/interrupt.h"
-//#include "driverlib/pin_map.h"
+#include "driverlib/pin_map.h"
 //#include "driverlib/rom.h"
 //#include "driverlib/rom_map.h"
-//#include "driverlib/uart.h"
+#include "driverlib/uart.h"
 
 // GRLIB FILES
 #include "grlib/grlib.h"
@@ -49,19 +49,10 @@
 #include "driverlib/hibernate.h"
 #include "inc/hw_hibernate.h"
 
-// Motor files
-#include <ti/drivers/PWM.h>
-
-// Our header files:
-#include "GUI.h"
-#include <MotorControl.h>
-
-#define TASKSTACKSIZE  4024
-
-uint32_t g_ui32SysClock;
-
-Task_Struct gui_struct;
-Char gui_stack[TASKSTACKSIZE];
+// UART extra FILES
+#include "inc/hw_ints.h"
+#include "driverlib/debug.h"
+#include "driverlib/gpio.h"
 
 #ifdef ewarm
 #pragma data_alignment=1024
@@ -72,7 +63,14 @@ tDMAControlTable psDMAControlTable[64];
 #else
 tDMAControlTable psDMAControlTable[64] __attribute__ ((aligned(1024)));
 #endif
+// Our header files:
+#include "GUI.h"
+#include "temp.h"
+#include <MotorControl.h>
+// Motor files
+#include <ti/drivers/PWM.h>
 
+uint32_t g_ui32SysClock;
 
 // TOGGLE GPIO LIGHTS // off = 0 on = 1
 void toggleLight(int light, int tog){
@@ -83,23 +81,29 @@ void toggleLight(int light, int tog){
     // add lights here if needed
 }
 
+/*
+ *  ======== Tasks ========
+ */
+
 // GUI Task Function
 Void guiRun() {
+	// add hwi disable line by line until it crashes?
     tContext sContext;
     bool bUpdate;
 
-    FPUEnable();
-    FPULazyStackingEnable();
+
+    //FPUEnable();
+    //FPULazyStackingEnable();
 
     // graphics
     Kentec320x240x16_SSD2119Init(g_ui32SysClock);
     GrContextInit(&sContext, &g_sKentec320x240x16_SSD2119);
 
     // screen
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_UDMA);
-    SysCtlDelay(10);
-    uDMAControlBaseSet(&psDMAControlTable[0]);
-    uDMAEnable();
+    //SysCtlPeripheralEnable(SYSCTL_PERIPH_UDMA);
+    //SysCtlDelay(10);
+    //uDMAControlBaseSet(&psDMAControlTable[0]);
+    //uDMAEnable();
     TouchScreenInit(g_ui32SysClock);
     TouchScreenCallbackSet(WidgetPointerMessage);
 
@@ -117,11 +121,11 @@ Void guiRun() {
 
     // gui functionality
     GUI_init();
-
     while (1) {
         bUpdate = DateTimeDisplayGet();
         if(bUpdate) run_timer();
         WidgetMessageQueueProcess();
+        Task_sleep(100);
     }
 }
 
@@ -144,9 +148,9 @@ void setup_adc_hwi(){
 void setup_gui_task(){
     Task_Params gui_params;
     Task_Params_init(&gui_params);
-    gui_params.stackSize = TASKSTACKSIZE;
-    gui_params.stack = &gui_stack;
-    Task_construct(&gui_struct, (Task_FuncPtr)guiRun, &gui_params, NULL);
+    gui_params.priority = 1;
+    gui_params.stackSize = 1024;
+    Task_create((Task_FuncPtr)guiRun, &gui_params, NULL);
 }
 
 int main(void)
@@ -159,7 +163,7 @@ int main(void)
     // Board_initI2C();
     // Board_initSDSPI();
     // Board_initSPI();
-    // Board_initUART();
+    Board_initUART();
     // Board_initUSB(Board_USBDEVICE);
     // Board_initUSBMSCHFatFs();
     // Board_initWatchdog();
@@ -170,19 +174,16 @@ int main(void)
 
     // Set the clocking to run directly from the crystal at 120MHz.
     g_ui32SysClock = SysCtlClockFreqSet((SYSCTL_XTAL_25MHZ | SYSCTL_OSC_MAIN
-                     | SYSCTL_USE_PLL |SYSCTL_CFG_VCO_480), 120000000);
-
+                   | SYSCTL_USE_PLL |SYSCTL_CFG_VCO_480), 120000000);
 
     // Setup tasks
+    setup_temp();
     setup_gui_task();
-
 
     // Setup Hwis
     setup_adc_hwi();
 
-
     // Setup Swis
-
 
     /* Start BIOS */
     BIOS_start();
