@@ -38,25 +38,17 @@ int isSetup = 0;
 uint8_t calibration_byte = 0b01010101; // AKA 0x55 send data from right to left
 uint8_t temp_register_byte = 0b10100000;
 uint8_t last_response;
+uint8_t response5[5];
 uint8_t response3[3];
+uint8_t response2[2];
 
 // Clock
 Void clkTempFxn();
 Clock_Struct clkTempStruct;
 
-// Swi
-Swi_Struct swiTempStruct;
-Swi_Handle swiTempHandle;
-
 // Temp readings
-float temp1;
 float temp1_avg;
-float temp2;
 float temp2_avg;
-float temp1_readings[MAXREADINGSAVG];
-float temp2_readings[MAXREADINGSAVG];
-int readings_index = 0;
-int currently_reading = 0;
 
 // Mailbox
 #define MAILBOXSIZE 10
@@ -65,54 +57,34 @@ Mailbox_Handle mbxHandle;
 
 // Mailbox struct
 typedef struct MsgObj {
-    uint8_t *temp1;
-    uint8_t *temp2;
+    uint8_t temp1_1;
+    uint8_t temp1_2;
+    uint8_t temp2_1;
+    uint8_t temp2_2;
 } MsgObj, *Msg;
 
-// Functions
+// Event
+Event_Struct evtStruct;
+Event_Handle evtHandle;
+
+// ------------------ Functions ----------------------------------
 Void read_temp_sensors();
+Void calculate_average();
 
-Void clkTempFxn() {
-    Swi_post(swiTempHandle);
+Void taskTempGetTask() {
+    read_temp_sensors();
 }
 
-Void taskTempAvgFxn() {
-    if (currently_reading == 0) {
-        currently_reading = 1;
-        read_temp_sensors();
-        currently_reading = 0;
-    }
-}
-
-Void runTaskTempAvgFxn() {
+Void clkTempFxn() { // Clock that triggers as a Swi at intervals
+    // Create task to get latest reading
     Task_Params taskParams;
     Task_Params_init(&taskParams);
     taskParams.stackSize = TEMPTASKSTACKSIZE;
-    taskParams.priority = 3;
-    Task_create((Task_FuncPtr)taskTempAvgFxn, &taskParams, NULL);
-}
-
-Void swiTempGetFxn() {
-    runTaskTempAvgFxn();
+    taskParams.priority = 10;
+    Task_create((Task_FuncPtr)taskTempGetTask, &taskParams, NULL);
 }
 
 void setup_temp_internal() {
-    //UInt taskKey = Task_disable();
-    //UInt swiKey = Swi_disable();
-    /*
-    // ----- Setup UART (for printing data)
-    UART_Params_init(&uart0params); // Setup to defaults
-    uart0params.baudRate  = 115200;
-    uart0params.readEcho = UART_ECHO_OFF;
-    uart0handle = UART_open(Board_UART0, &uart0params);
-    if (!uart0handle) {
-        System_printf("UART Putty did not open");
-    }
-    const unsigned char hello[] = "Address Initialize\n";
-    int ret = UART_write(uart0handle, hello, sizeof(hello));
-    System_printf("The UART wrote %d bytes\n", ret);
-    */
-
     // ----- Setup TEMP UART
     UART_Params_init(&uart7params);
     uart7params.baudRate  = 115200;
@@ -138,18 +110,15 @@ void setup_temp_internal() {
     UART_write(uart7handle, &addr_assign_byte, sizeof(addr_assign_byte));
 
     // Will get back echo of last 3 bytes
-    uint8_t echo_response;
-    for (i=0; i < 3; i++) {
-        UART_read(uart7handle, &echo_response, sizeof(echo_response));
-    }
+    UART_read(uart7handle, &response3, sizeof(response3));
 
-    Task_sleep(7);
+    Task_sleep(10);
 
     // Read address responses of temp sensor 1
     uint8_t addr_response1;
     UART_read(uart7handle, &addr_response1, sizeof(addr_response1));
 
-    Task_sleep(7);
+    Task_sleep(10);
 
     // Read address responses of temp sensor 2
     uint8_t addr_response2;
@@ -163,11 +132,9 @@ void setup_temp_internal() {
     UART_write(uart7handle, &last_response_byte, sizeof(last_response_byte));
 
     // Will get back echo of last 2 bytes
-    for (i=0; i < 2; i++) {
-        UART_read(uart7handle, &echo_response, sizeof(echo_response));
-    }
+    UART_read(uart7handle, &response2, sizeof(response2));
 
-    Task_sleep(7);
+    Task_sleep(10);
 
     UART_read(uart7handle, &last_response, sizeof(last_response));
 
@@ -188,25 +155,29 @@ void setup_temp_internal() {
     UART_write(uart7handle, &config_settings, sizeof(config_settings));
     UART_write(uart7handle, &config_settings, sizeof(config_settings));
 
-    // Will get back echo of last 4 bytes
-    for (i=0; i < 5; i++) {
-        UART_read(uart7handle, &echo_response, sizeof(echo_response));
-    }
+    Task_sleep(10);
 
-    // Mailbox construct
+    // Will get back echo of last 5 bytes
+    UART_read(uart7handle, &response5, sizeof(response5));
+
+    // Event construct (used to tell mailbox send event)
+    Event_construct(&evtStruct, NULL);
+    evtHandle = Event_handle(&evtStruct);
+
+    // Mailbox construct (used to store readings)
     Mailbox_Params mbxParams;
     Mailbox_Params_init(&mbxParams);
-    //mbxParams.readerEvent = evtHandle;
-    //mbxParams.readerEventId = Event_Id_02; // Enables implicit event posting
+    mbxParams.readerEvent = evtHandle;
+    mbxParams.readerEventId = Event_Id_02; // Enables implicit event posting
     Mailbox_construct(&mbxStruct,sizeof(MsgObj), MAILBOXSIZE, &mbxParams, NULL);
     mbxHandle = Mailbox_handle(&mbxStruct);
 
-    // Setup swi to get values
-    Swi_Params swiParams;
-    Swi_Params_init(&swiParams);
-    // Set priority? Trigger?
-    Swi_construct(&swiTempStruct, (Swi_FuncPtr)swiTempGetFxn, &swiParams, NULL);
-    swiTempHandle = Swi_handle(&swiTempStruct);
+    // Create task to average readings
+    Task_Params taskParams;
+    Task_Params_init(&taskParams);
+    taskParams.stackSize = TEMPTASKSTACKSIZE;
+    taskParams.priority = 2;
+    Task_create((Task_FuncPtr)calculate_average, &taskParams, NULL);
 
     // Setup clock function to read every 0.5 seconds
     Clock_Params clkParams;
@@ -216,28 +187,14 @@ void setup_temp_internal() {
     Clock_start(Clock_handle(&clkTempStruct));
 
     System_printf("Temperature sensors setup\n");
-
-    //read_temp_sensors();
-    //Task_restore(taskKey);
-    //Swi_restore(swiKey);
 }
 
 void setup_temp() {
     Task_Params taskParams;
     Task_Params_init(&taskParams);
-    taskParams.stackSize = TEMPTASKSTACKSIZE;
-    taskParams.priority = 10;
+    taskParams.stackSize = TEMPTASKSTACKSIZE * 2;
+    taskParams.priority = 5;
     Task_create((Task_FuncPtr)setup_temp_internal, &taskParams, NULL);
-}
-
-float TMP107_DecodeTemperatureResult(int HByte, int LByte){
-    // convert raw byte response to floating point temperature
-    int Bytes;
-    float temperature;
-    Bytes = HByte << 8 | LByte;
-    Bytes &= 0xFFFC; //Mask NVM bits not used in Temperature Result
-    temperature = (float) Bytes / 256;
-    return temperature;
 }
 
 void read_temp_sensors() {
@@ -260,40 +217,68 @@ void read_temp_sensors() {
     uint8_t temp_sensor_1[2];
     uint8_t temp_sensor_2[2];
 
-    Task_sleep(2);
+    Task_sleep(10);
 
     // Returns furthest sensor first
     UART_read(uart7handle, &temp_sensor_2, sizeof(temp_sensor_2));
-    Task_sleep(2);
+    Task_sleep(10);
     UART_read(uart7handle, &temp_sensor_1, sizeof(temp_sensor_1));
 
     MsgObj msg;
-    msg.temp1 = temp_sensor_1;
-    msg.temp2 = temp_sensor_2;
+    msg.temp1_1 = temp_sensor_1[0];
+    msg.temp1_2 = temp_sensor_1[1];
+    msg.temp2_1 = temp_sensor_2[0];
+    msg.temp2_2 = temp_sensor_2[1];
     Mailbox_post(mbxHandle, &msg, BIOS_NO_WAIT);
+}
 
-    temp1 = TMP107_DecodeTemperatureResult(temp_sensor_1[1], temp_sensor_1[0]);
-    temp2 = TMP107_DecodeTemperatureResult(temp_sensor_2[1], temp_sensor_2[0]);
+float TMP107_DecodeTemperatureResult(int HByte, int LByte){
+    // convert raw byte response to floating point temperature
+    int Bytes;
+    float temperature;
+    Bytes = HByte << 8 | LByte;
+    Bytes &= 0xFFFC; //Mask NVM bits not used in Temperature Result
+    temperature = (float) Bytes / 256;
+    return temperature;
+}
 
-    if (readings_index < MAXREADINGSAVG) { // Add until we have enough
-        temp1_readings[readings_index] = temp1;
-        temp2_readings[readings_index] = temp2;
-        readings_index++;
-    } else { // Once we have enough, get avg and print
-        float temp1_sum = 0;
-        float temp2_sum = 0;
-        for (i=0; i<MAXREADINGSAVG; i++) {
-            temp1_sum += temp1_readings[i];
-            temp2_sum += temp2_readings[i];
+Void calculate_average() {
+    // Read temperatures
+    float temp1 = 0;
+    float temp2 = 0;
+    UInt readings_count = 0;
+
+    // Mailbox and event
+    MsgObj readings;
+    UInt posted;
+    while (1) {
+
+        // Wait for events for char, return, space
+        posted = Event_pend(evtHandle,
+                          Event_Id_NONE, // AND
+                          Event_Id_02, // OR
+                          BIOS_WAIT_FOREVER);
+
+        if (posted & Event_Id_02) { // Temp reading send to mailbox
+            if (Mailbox_pend(mbxHandle, &readings, BIOS_NO_WAIT)) {
+                temp1 += TMP107_DecodeTemperatureResult(readings.temp1_2, readings.temp1_1);
+                temp2 += TMP107_DecodeTemperatureResult(readings.temp2_2, readings.temp2_1);
+                readings_count++;
+            }
         }
-        temp1_avg = temp1_sum / MAXREADINGSAVG;
-        temp2_avg = temp2_sum / MAXREADINGSAVG;
-        System_printf("Sensor 2: %fºC \t Sensor 1: %fºC\n", temp2_avg, temp1_avg);
-        System_flush();
 
-        // Reset array
-        readings_index = 0;
+        // Average once we have enough
+        if (readings_count >= MAXREADINGSAVG) {
+            temp1_avg = temp1 / MAXREADINGSAVG;
+            temp2_avg = temp2 / MAXREADINGSAVG;
+            System_printf("Sensor 2: %fºC \t Sensor 1: %fºC\n", temp2_avg, temp1_avg);
+            System_flush();
+
+            // Reset
+            readings_count = 0;
+            temp1 = 0;
+            temp2 = 0;
+        }
     }
-    //Task_restore(taskKey);
 }
 
