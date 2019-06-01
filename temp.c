@@ -285,10 +285,10 @@ Void calculate_average() {
 }
 
 int get_temp1(int resolution) {
-    return (int)temp1_avg * resolution;
+    return (int)(temp1_avg * resolution);
 }
 
 int get_temp2(int resolution) {
-    return (int)temp2_avg * resolution;
+    return (int)(temp2_avg * resolution);
 }
 

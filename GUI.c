@@ -21,7 +21,6 @@
 #include "MotorControl.h"
 #include "main.h"
 #include "temp.h"
-#include <xdc/runtime/System.h>
 
 
 struct Analytic {
@@ -295,19 +294,15 @@ void turnOnGraphVariable(tWidget *psWidget, uint32_t bSelected){
 
             variables[ui32Idx].draw = true;
 
-            //if(==1) toSet = getPower();
+            //if(ui32Idx==1) toSet = getPower();
             //if(ui32Idx==2) toSet = getLUX();
-            if(ui32Idx==3){
-                toSet = get_temp1() * 50;
-                System_printf("temp: %d\n", toSet);
-                System_flush();
+            if(ui32Idx==2){
+                toSet = get_temp1(50);;
             }
 
             if(ui32Idx == 4){
                 toSet = getRPM();
                 if(disp_tab == 0) changeSpeedDisplay(toSet);
-                System_printf("speed: %d\n", toSet);
-                System_flush();
             }
 
             variables[ui32Idx].value[0] = toSet;
@@ -492,17 +487,14 @@ void drawAllAnalytics(){
     for(i=0;i<5;i++){
         variables[i].time++;
         if(variables[i].time >= 13) variables[i].time = 0;
-    }
 
-    for(i=0;i<5;i++){
         toSet = 0;
 
         //if(i==1) toSet = getPower();
         //if(i==2) toSet = getLUX();
-        if(i==3){ //toSet = get_temp1();
-            toSet = get_temp1() * 50;
-            System_printf("temp: %d\n", toSet);
-            System_flush();
+        if(i==2){
+            toSet = get_temp1(50);
+
         }
         if(i==4){
             toSet = getRPM();
@@ -510,6 +502,7 @@ void drawAllAnalytics(){
         }
 
         variables[i].value[variables[i].time] = toSet;
+
     }
 
     if(disp_tab == 1) WidgetPaint((tWidget *)(&analytics));
