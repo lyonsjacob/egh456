@@ -184,10 +184,10 @@ int main(void)
 
     // Setup tasks
     setup_temp();
-    setup_gui_task();
+    //setup_gui_task();
 
     // Setup Hwis
-    setup_adc_hwi();
+    //setup_adc_hwi();
 
     // Setup Swis
 

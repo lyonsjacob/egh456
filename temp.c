@@ -20,6 +20,11 @@
 #include <ti/sysbios/knl/Swi.h>
 #include <ti/sysbios/hal/Hwi.h>
 
+// EVENT FILES
+#include <ti/sysbios/knl/Event.h>
+#include <ti/sysbios/knl/Semaphore.h>
+#include <ti/sysbios/knl/Mailbox.h>
+
 // UART stuff
 UART_Handle      uart0handle;
 UART_Params      uart0params;
@@ -31,8 +36,9 @@ int isSetup = 0;
 
 // Bytes
 uint8_t calibration_byte = 0b01010101; // AKA 0x55 send data from right to left
+uint8_t temp_register_byte = 0b10100000;
 uint8_t last_response;
-uint8_t echo_response;
+uint8_t response3[3];
 
 // Clock
 Void clkTempFxn();
@@ -50,6 +56,18 @@ float temp2_avg;
 float temp1_readings[MAXREADINGSAVG];
 float temp2_readings[MAXREADINGSAVG];
 int readings_index = 0;
+int currently_reading = 0;
+
+// Mailbox
+#define MAILBOXSIZE 10
+Mailbox_Struct mbxStruct;
+Mailbox_Handle mbxHandle;
+
+// Mailbox struct
+typedef struct MsgObj {
+    uint8_t *temp1;
+    uint8_t *temp2;
+} MsgObj, *Msg;
 
 // Functions
 Void read_temp_sensors();
@@ -59,7 +77,11 @@ Void clkTempFxn() {
 }
 
 Void taskTempAvgFxn() {
-    read_temp_sensors();
+    if (currently_reading == 0) {
+        currently_reading = 1;
+        read_temp_sensors();
+        currently_reading = 0;
+    }
 }
 
 Void runTaskTempAvgFxn() {
@@ -75,7 +97,7 @@ Void swiTempGetFxn() {
 }
 
 void setup_temp_internal() {
-    UInt taskKey = Task_disable();
+    //UInt taskKey = Task_disable();
     //UInt swiKey = Swi_disable();
     /*
     // ----- Setup UART (for printing data)
@@ -116,6 +138,7 @@ void setup_temp_internal() {
     UART_write(uart7handle, &addr_assign_byte, sizeof(addr_assign_byte));
 
     // Will get back echo of last 3 bytes
+    uint8_t echo_response;
     for (i=0; i < 3; i++) {
         UART_read(uart7handle, &echo_response, sizeof(echo_response));
     }
@@ -170,6 +193,13 @@ void setup_temp_internal() {
         UART_read(uart7handle, &echo_response, sizeof(echo_response));
     }
 
+    // Mailbox construct
+    Mailbox_Params mbxParams;
+    Mailbox_Params_init(&mbxParams);
+    //mbxParams.readerEvent = evtHandle;
+    //mbxParams.readerEventId = Event_Id_02; // Enables implicit event posting
+    Mailbox_construct(&mbxStruct,sizeof(MsgObj), MAILBOXSIZE, &mbxParams, NULL);
+    mbxHandle = Mailbox_handle(&mbxStruct);
 
     // Setup swi to get values
     Swi_Params swiParams;
@@ -187,9 +217,8 @@ void setup_temp_internal() {
 
     System_printf("Temperature sensors setup\n");
 
-    Task_sleep(1000);
-    read_temp_sensors();
-    Task_restore(taskKey);
+    //read_temp_sensors();
+    //Task_restore(taskKey);
     //Swi_restore(swiKey);
 }
 
@@ -212,10 +241,9 @@ float TMP107_DecodeTemperatureResult(int HByte, int LByte){
 }
 
 void read_temp_sensors() {
-    UInt taskKey = Task_disable();
+    //UInt taskKey = Task_disable();
     //System_printf("Reading sensors\n");
     // ------------- LETS READ A TEMP
-    uint8_t temp_register_byte = 0b10100000;
 
     // Send global read
     // 1. Send calibration byte
@@ -225,27 +253,24 @@ void read_temp_sensors() {
     // 3. Send register pointer = temperature register
     UART_write(uart7handle, &temp_register_byte, sizeof(temp_register_byte));
 
-    Task_sleep(7);
-
     // Will get back echo of last 3 bytes
-    for (i=0; i < 3; i++) {
-        UART_read(uart7handle, &echo_response, 1);
-    }
-
-    Task_sleep(7);
+    UART_read(uart7handle, &response3, 3);
 
     // Read temperatures
     uint8_t temp_sensor_1[2];
     uint8_t temp_sensor_2[2];
 
+    Task_sleep(2);
+
     // Returns furthest sensor first
-    for (i=0; i < 2; i++) {
-        UART_read(uart7handle, &temp_sensor_2[i], sizeof(temp_sensor_2[i]));
-    }
-    Task_sleep(7);
-    for (i=0; i < 2; i++) {
-        UART_read(uart7handle, &temp_sensor_1[i], sizeof(temp_sensor_1[i]));
-    }
+    UART_read(uart7handle, &temp_sensor_2, sizeof(temp_sensor_2));
+    Task_sleep(2);
+    UART_read(uart7handle, &temp_sensor_1, sizeof(temp_sensor_1));
+
+    MsgObj msg;
+    msg.temp1 = temp_sensor_1;
+    msg.temp2 = temp_sensor_2;
+    Mailbox_post(mbxHandle, &msg, BIOS_NO_WAIT);
 
     temp1 = TMP107_DecodeTemperatureResult(temp_sensor_1[1], temp_sensor_1[0]);
     temp2 = TMP107_DecodeTemperatureResult(temp_sensor_2[1], temp_sensor_2[0]);
@@ -269,6 +294,6 @@ void read_temp_sensors() {
         // Reset array
         readings_index = 0;
     }
-    Task_restore(taskKey);
+    //Task_restore(taskKey);
 }
 
