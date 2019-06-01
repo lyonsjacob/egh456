@@ -1,9 +1,12 @@
 /* C header files */
+#include <stdio.h>
+#include <math.h>
 #include <stdint.h>
 #include <stdbool.h>
 
 /* XDCtools Header files */
 #include <xdc/std.h>
+
 
 /* Board Header file */
 #include "Board.h"
@@ -43,7 +46,7 @@
 #include <ti/drivers/GPIO.h>
 #include <ti/sysbios/hal/Hwi.h>
 #include <ti/sysbios/knl/Swi.h>
-// #include <ti/drivers/I2C.h>
+#include <ti/drivers/I2C.h>
 // #include <ti/drivers/SDSPI.h>
 // #include <ti/drivers/SPI.h>
 // #include <ti/drivers/UART.h>
@@ -76,14 +79,20 @@
 
 // Our header files:
 #include "GUI.h"
+#include "i2csensors.h"
+//#include "ACC.h"
 #include <MotorControl.h>
 
-#define TASKSTACKSIZE  4024
+#define TASKSTACKSIZE  4096*2
 
 uint32_t g_ui32SysClock;
 
 Task_Struct gui_struct;
 Char gui_stack[TASKSTACKSIZE];
+
+I2C_Handle      i2c;
+I2C_Params      gui_params;
+I2C_Transaction i2cTransaction;
 
 #ifdef ewarm
 #pragma data_alignment=1024
@@ -109,9 +118,6 @@ void toggleLight(int light, int tog){
 Void guiRun() {
     tContext sContext;
     bool bUpdate;
-
-    FPUEnable();
-    FPULazyStackingEnable();
 
     // graphics
     Kentec320x240x16_SSD2119Init(g_ui32SysClock);
@@ -140,10 +146,30 @@ Void guiRun() {
     // gui functionality
     GUI_init();
 
+
+    //=====CODE FOR INITIATING LIGH REG========
+
+    initLux();
+
+    //======CODE FOR CONFIGURING ACC=============
+
+    initAcc();
+
+    int count = 0;
+
     while (1) {
+
+        if(count == 500){
+            count = 0;
+            readLux();
+            readAcc();
+        }
+
         bUpdate = DateTimeDisplayGet();
         if(bUpdate) run_timer();
         WidgetMessageQueueProcess();
+        System_flush();
+        count++;
     }
 }
 
@@ -171,23 +197,32 @@ void setup_gui_task(){
     Task_construct(&gui_struct, (Task_FuncPtr)guiRun, &gui_params, NULL);
 }
 
+void setupI2C2( void )
+{
+    //=======CREATE I2C FOR USAGE===============
+
+    I2C_Params_init(&gui_params);
+    gui_params.bitRate = I2C_400kHz;
+    i2c = I2C_open(Board_I2C_LUX, &gui_params);
+    if (i2c == NULL) {
+        System_abort("Error Initializing I2C\n");
+    }
+    else {
+        System_printf("I2C Initialized!\n");
+    }
+}
+
 int main(void)
 {
     /* Call board init functions */
 
     Board_initGeneral();
-    // Board_initEMAC();
     Board_initGPIO();
-    // Board_initI2C();
-    // Board_initSDSPI();
-    // Board_initSPI();
-    // Board_initUART();
-    // Board_initUSB(Board_USBDEVICE);
-    // Board_initUSBMSCHFatFs();
-    // Board_initWatchdog();
-    // Board_initWiFi();
+    Board_initI2C();
+
     Board_initPWM();
     MotorSetup();
+
 
 
     // Set the clocking to run directly from the crystal at 120MHz.
@@ -195,6 +230,7 @@ int main(void)
                      | SYSCTL_USE_PLL |SYSCTL_CFG_VCO_480), 120000000);
 
 
+    setupI2C2();
     // Setup tasks
     setup_gui_task();
 
