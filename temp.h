@@ -15,8 +15,8 @@ void setup_temp_internal();
 
 // Usage
 void read_temp_sensors();
-int get_temp1();
-int get_temp2();
+int get_temp1(int resolution);
+int get_temp2(int resolution);
 
 
 #endif /* TEMP_H_ */
