@@ -249,12 +249,12 @@ void paintGraph(tWidget *psWidget, tContext *psContext){
     }
 
     int y;
-    for(y=1;y<=4;y++){
-        int yy =4;
+    for(y=1;y<=5;y++){
+        int yy =5;
         yy-=y;
         static char val[5];
         usprintf(val, "%d",y*10);
-        GrStringDraw(psContext, val, -1, 20, 60+yy*20, 0);
+        GrStringDraw(psContext, val, -1, 20, 54+yy*20, 0);
     }
 
     //clear lines
@@ -277,7 +277,7 @@ void paintGraph(tWidget *psWidget, tContext *psContext){
                     if(i==3) GrContextForegroundSet(psContext, ClrCyan);
                     if(i==4) GrContextForegroundSet(psContext, ClrSnow);
 
-                    GrLineDraw(psContext, 51+j*20, 160-((int)(variables[i].value[j]/20)), 50+(j+1)*20, 160-((int)(variables[i].value[j+1]/20)));
+                    GrLineDraw(psContext, 51+j*20, 160-(variables[i].value[j]*2), 50+(j+1)*20, 160-(variables[i].value[j+1]*2));
                 } else {
                     break;
                 }
@@ -296,13 +296,13 @@ void turnOnGraphVariable(tWidget *psWidget, uint32_t bSelected){
             if(ui32Idx!=0) variables[ui32Idx].draw = true; //THIS statment draws and doesnt allow power func
 
             //if(ui32Idx==1) toSet = getPower();
-            if(ui32Idx==1) toSet = getLux(200);
-            if(ui32Idx==2) toSet = get_temp2(50);
-            if(ui32Idx==3) toSet = getAcc(50);
+            if(ui32Idx==1) toSet = getLux(1);
+            if(ui32Idx==2) toSet = get_temp2(1);
+            if(ui32Idx==3) toSet = getAcc(1);
 
             if(ui32Idx == 4){
-                toSet = getRPM();
-                if(disp_tab == 0) changeSpeedDisplay(toSet);
+                toSet = getRPM()/100;
+                if(disp_tab == 0) changeSpeedDisplay(toSet*100);
             }
 
             if(toSet > 2500) toSet = 2500;
@@ -493,12 +493,12 @@ void drawAllAnalytics(){
         toSet = 0;
 
         //if(i==1) toSet = getPower();
-        if(i==1) toSet = getLux(200);
-        if(i==2) toSet = get_temp2(50);
-        if(i==3) toSet = getAcc(50);
+        if(i==1) toSet = getLux(1);
+        if(i==2) toSet = get_temp2(1);
+        if(i==3) toSet = getAcc(1);
 
         if(i==4){
-            toSet = getRPM();
+            toSet = getRPM()/100;
             if(disp_tab == 0) changeSpeedDisplay(toSet);
         }
 
