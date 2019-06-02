@@ -222,7 +222,7 @@ void setupI2C2( void )
         System_abort("Error Initializing I2C\n");
     }
     else {
-        System_printf("I2C Initialized!\n");
+        //System_printf("I2C Initialized!\n");
     }
 }
 

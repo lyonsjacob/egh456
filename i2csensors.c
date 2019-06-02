@@ -105,7 +105,7 @@ void initLux()
         System_abort("Error Initiating Lux Sensor\n");
     }
     else {
-        System_printf("Lux Sensor Configured!\n");
+        //System_printf("Lux Sensor Configured!\n");
     }
 }
 
@@ -125,7 +125,7 @@ void initAcc()
         System_abort("Error Reading Accelorometer Power Mode\n");
     }
     else {
-        System_printf("Accelerometer Power Mode Read!\n");
+        //System_printf("Accelerometer Power Mode Read!\n");
     }
 
     accRxBuffer[0] = 0b00010001; //Normal power mode
@@ -140,7 +140,7 @@ void initAcc()
         System_abort("Error Changing Accelorometer Power Mode\n");
     }
     else {
-        System_printf("Accelerometer Power Mode Changed!\n");
+        //System_printf("Accelerometer Power Mode Changed!\n");
     }
 
     accTxBuffer[0] = 0x41; //Power mode set register
@@ -154,7 +154,7 @@ void initAcc()
         System_abort("Error Reading Accelorometer Range\n");
     }
     else {
-        System_printf("Accelerometer Range Read!\n");
+        //System_printf("Accelerometer Range Read!\n");
     }
 
     accRxBuffer[0] = 0b00000101; //Normal power mode
@@ -169,7 +169,7 @@ void initAcc()
         System_abort("Error Changing Accelorometer Range\n");
     }
     else {
-        System_printf("Accelerometer Range Changed!\n");
+        //System_printf("Accelerometer Range Changed!\n");
     }
 }
 
@@ -200,7 +200,7 @@ void readLux()
 
     }
     else {
-        System_printf("I2C Bus fault\n");
+        //System_printf("I2C Bus fault\n");
     }
 }
 
@@ -229,7 +229,7 @@ void readAcc()
         }
     }
     else {
-        System_printf("I2C Bus fault\n");
+        //System_printf("I2C Bus fault\n");
     }
 }
 
