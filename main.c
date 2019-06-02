@@ -74,6 +74,8 @@
 #include "driverlib/hibernate.h"
 #include "inc/hw_hibernate.h"
 
+#include <semaphore.h>
+
 // Motor files
 #include <ti/drivers/PWM.h>
 
@@ -142,14 +144,20 @@ Void guiRun() {
     DateTimeDefaultSet(10, 30);
     /*******************************/
     /*******************************/
-
+//    // lux functionality
+//    initLux();
+//    // acc functionality
+//    initAcc();
     // gui functionality
     GUI_init();
 
     while (1) {
+//        readLux();
+//        readAcc();
         bUpdate = DateTimeDisplayGet();
         if(bUpdate) run_timer();
         WidgetMessageQueueProcess();
+        System_flush();
         Task_sleep(100);
     }
 }
@@ -164,7 +172,7 @@ Void luxRun() {
     while (1) {
         readLux();
         System_flush();
-        Task_sleep(10);
+        Task_sleep(100);
     }
 }
 
@@ -178,7 +186,7 @@ Void accRun() {
     while (1) {
         readAcc();
         System_flush();
-        Task_sleep(10);
+        Task_sleep(100);
     }
 }
 
@@ -202,7 +210,7 @@ void setup_adc_hwi(){
 void setup_gui_task(){
     Task_Params gui_params;
     Task_Params_init(&gui_params);
-    gui_params.stackSize = 1024;
+    gui_params.stackSize = 2048;
     gui_params.priority = 1;
     Task_create((Task_FuncPtr)guiRun, &gui_params, NULL);
 }
@@ -227,9 +235,20 @@ void setupI2C2( void )
 {
     //=======CREATE I2C FOR USAGE===============
 
-    I2C_Params_init(&gui_params);
-    gui_params.bitRate = I2C_400kHz;
-    i2c = I2C_open(Board_I2C_LUX, &gui_params);
+    I2C_Params_init(&lux_params);
+    lux_params.bitRate = I2C_400kHz;
+    i2c = I2C_open(Board_I2C_LUX, &lux_params);
+    if (i2c == NULL) {
+        System_abort("Error Initializing I2C\n");
+    }
+    else {
+        System_printf("I2C Initialized!\n");
+    }
+    //=======CREATE I2C FOR USAGE===============
+
+    I2C_Params_init(&acc_params);
+    acc_params.bitRate = I2C_400kHz;
+    i2c = I2C_open(Board_I2C_LUX, &acc_params);
     if (i2c == NULL) {
         System_abort("Error Initializing I2C\n");
     }
@@ -257,10 +276,11 @@ int main(void)
 
 
     setupI2C2();
+
     // Setup tasks
-//    setup_gui_task();
+    setup_gui_task();
     setup_lux_task();
-//    setup_acc_task();
+    setup_acc_task();
 
 
     // Setup Hwis

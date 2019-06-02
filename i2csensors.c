@@ -61,9 +61,12 @@ I2C_Handle      i2c;
 I2C_Transaction i2cTransaction;
 
 uint16_t        lux;
+uint8_t         luxTxBuffer[3];
+uint8_t         luxRxBuffer[6];
+
 int16_t         acc;
-uint8_t         txBuffer[3];
-uint8_t         rxBuffer[6];
+uint8_t         accTxBuffer[3];
+uint8_t         accRxBuffer[6];
 
 // Register addresses
 #define LUX_REG_RESULT                      0x00
@@ -84,11 +87,11 @@ float getAcc(void)
 
 void initLux()
 {
-    txBuffer[0] = LUX_REG_CONFIGURATION;
-    txBuffer[1] = 0xC4;
-    txBuffer[2] = 0x10;
+    luxTxBuffer[0] = LUX_REG_CONFIGURATION;
+    luxTxBuffer[1] = 0xC4;
+    luxTxBuffer[2] = 0x10;
     i2cTransaction.slaveAddress = Board_OPT3001_ADDR;
-    i2cTransaction.writeBuf = txBuffer;
+    i2cTransaction.writeBuf = luxTxBuffer;
     i2cTransaction.writeCount = 3;
     i2cTransaction.readBuf = NULL;
     i2cTransaction.readCount = 0;
@@ -103,11 +106,11 @@ void initLux()
 
 void initAcc()
 {
-    txBuffer[0] = 0x7E; //Power mode set register
+    accTxBuffer[0] = 0x7E; //Power mode set register
     i2cTransaction.slaveAddress = Board_BMI160_ADDR;
-    i2cTransaction.writeBuf = txBuffer;
+    i2cTransaction.writeBuf = accTxBuffer;
     i2cTransaction.writeCount = 1;
-    i2cTransaction.readBuf = rxBuffer;
+    i2cTransaction.readBuf = accRxBuffer;
     i2cTransaction.readCount = 1;
 
     if (!I2C_transfer(i2c, &i2cTransaction)) {
@@ -117,10 +120,10 @@ void initAcc()
         System_printf("Accelerometer Configured!\n");
     }
 
-    rxBuffer[0] = 0b00010001; //Normal power mode
-    txBuffer[1] = rxBuffer[0];
+    accRxBuffer[0] = 0b00010001; //Normal power mode
+    accTxBuffer[1] = accRxBuffer[0];
 
-    i2cTransaction.writeBuf = txBuffer;
+    i2cTransaction.writeBuf = accTxBuffer;
     i2cTransaction.writeCount = 2;
     i2cTransaction.readBuf = NULL;
     i2cTransaction.readCount = 0;
@@ -135,11 +138,11 @@ void initAcc()
 
 void readLux()
 {
-    txBuffer[0] = LUX_REG_RESULT;
+    luxTxBuffer[0] = LUX_REG_RESULT;
     i2cTransaction.slaveAddress = Board_OPT3001_ADDR;
-    i2cTransaction.writeBuf = txBuffer;
+    i2cTransaction.writeBuf = luxTxBuffer;
     i2cTransaction.writeCount = 1;
-    i2cTransaction.readBuf = rxBuffer;
+    i2cTransaction.readBuf = luxRxBuffer;
     i2cTransaction.readCount = 2;
 
     char luxStr[40];
@@ -147,7 +150,7 @@ void readLux()
 
     if (I2C_transfer(i2c, &i2cTransaction)) {
 
-        lux = rxBuffer[0] << 8 | rxBuffer[1];
+        lux = luxRxBuffer[0] << 8 | luxRxBuffer[1];
         result = lux & 0x0FFF;
         exponent = (lux & 0xF000) >> 12;
         convertedLux = result * (0.01 * exp2(exponent));
@@ -168,11 +171,11 @@ void readLux()
 
 void readAcc()
 {
-    txBuffer[0] = 0x12; //First acc reading register
+    accTxBuffer[0] = 0x12; //First acc reading register
     i2cTransaction.slaveAddress = Board_BMI160_ADDR;
-    i2cTransaction.writeBuf = txBuffer;
+    i2cTransaction.writeBuf = accTxBuffer;
     i2cTransaction.writeCount = 1;
-    i2cTransaction.readBuf = rxBuffer;
+    i2cTransaction.readBuf = accRxBuffer;
     i2cTransaction.readCount = 6;
 
     char accStr[40];
@@ -180,7 +183,7 @@ void readAcc()
     if (I2C_transfer(i2c, &i2cTransaction)) {
         int i;
         for(i = 0; i < 6; i += 2){
-            acc = (int16_t)((rxBuffer[i + 1] << 8) | rxBuffer[i]);
+            acc = (int16_t)((accRxBuffer[i + 1] << 8) | accRxBuffer[i]);
             convertedAcc = (acc * 0.061)/1000;
             sprintf(accStr, "Itteration: %d, Acc: %5.2f\n", i, convertedAcc);
             System_printf("%s\n", accStr);
