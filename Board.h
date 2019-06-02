@@ -78,6 +78,7 @@ extern "C" {
 #define Board_STATE2                STATE2
 #define Board_DIRECTION             DIRECTION
 #define Board_BRAKE                 BRAKE
+#define Board_I2C_LUX               EK_TM4C1294XL_I2C2
 
 #define Board_SDSPI0                EK_TM4C1294XL_SDSPI0
 #define Board_SDSPI1                EK_TM4C1294XL_SDSPI1
@@ -102,6 +103,8 @@ extern "C" {
 #define Board_TMP006_ADDR           (0x40)
 #define Board_RF430CL330_ADDR       (0x28)
 #define Board_TPL0401_ADDR          (0x40)
+#define Board_OPT3001_ADDR          (0x47)
+#define Board_BMI160_ADDR           (0x69)
 
 #ifdef __cplusplus
 }
