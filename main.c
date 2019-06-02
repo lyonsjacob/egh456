@@ -191,7 +191,7 @@ void setup_gui_task(){
     Task_Params gui_params;
     Task_Params_init(&gui_params);
     gui_params.stackSize = 1024;
-    gui_params.priority = 1;
+    gui_params.priority = 10;
     Task_create((Task_FuncPtr)guiRun, &gui_params, NULL);
 }
 
@@ -199,7 +199,7 @@ void setup_lux_task(){
     Task_Params lux_params;
     Task_Params_init(&lux_params);
     lux_params.stackSize = 512;
-    lux_params.priority = 2;
+    lux_params.priority = 10;
     Task_create((Task_FuncPtr)luxRun, &lux_params, NULL);
 }
 

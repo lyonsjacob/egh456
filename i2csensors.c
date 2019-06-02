@@ -51,11 +51,12 @@
 
 /* Example/Board Header files */
 #include "Board.h"
-
+#include <MotorControl.h>
 #include "GUI.h"
 
 float convertedLux;
 float convertedAcc[3];
+int setAcc;
 
 I2C_Handle      i2c;
 I2C_Transaction i2cTransaction;
@@ -212,12 +213,16 @@ void readAcc()
     i2cTransaction.readCount = 6;
 
 //    char accStr[40];
-
+    setAcc = getUserSetAccelerometer();
     if (I2C_transfer(i2c, &i2cTransaction)) {
         int i;
         for(i = 0; i < 6; i+= 2){
             acc = (int16_t)((accRxBuffer[i + 1] << 8) | accRxBuffer[i]);
-            convertedAcc[i/2] = ((acc * 0.061)/1000) * 9.8;
+            convertedAcc[i/2] = ((acc * 0.061)/500) * 9.8;
+            if(convertedAcc[i/2] > 9)
+            {
+                emergencyStop();
+            }
         }
     }
     else {
