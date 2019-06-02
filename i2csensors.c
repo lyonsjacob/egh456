@@ -54,8 +54,8 @@
 
 #include "GUI.h"
 
-float convertedLux = 0;
-float convertedAcc = 0;
+float convertedLux;
+float convertedAcc[3];
 
 I2C_Handle      i2c;
 I2C_Transaction i2cTransaction;
@@ -80,13 +80,14 @@ float getLUX(void)
     return convertedLux;
 }
 
-float getAcc(void)
+float* getAcc(void)
 {
     return convertedAcc;
 }
 
 void initLux()
 {
+    convertedLux = 0;
     luxTxBuffer[0] = LUX_REG_CONFIGURATION;
     luxTxBuffer[1] = 0xC4;
     luxTxBuffer[2] = 0x10;
@@ -106,6 +107,9 @@ void initLux()
 
 void initAcc()
 {
+    convertedAcc[0] = 0;
+    convertedAcc[1] = 0;
+    convertedAcc[2] = 0;
     accTxBuffer[0] = 0x7E; //Power mode set register
     i2cTransaction.slaveAddress = Board_BMI160_ADDR;
     i2cTransaction.writeBuf = accTxBuffer;
@@ -180,9 +184,9 @@ void readAcc()
 
     if (I2C_transfer(i2c, &i2cTransaction)) {
         int i;
-        for(i = 0; i < 6; i += 2){
+        for(i = 0; i < 6; i+= 2){
             acc = (int16_t)((accRxBuffer[i + 1] << 8) | accRxBuffer[i]);
-            convertedAcc = (acc * 0.061)/1000;
+            convertedAcc[i/2] = (acc * 0.061)/1000;
         }
     }
     else {
