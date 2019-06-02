@@ -94,7 +94,7 @@ void setup_temp_internal() {
     uart7params.parityType = UART_PAR_NONE;
     uart7handle = UART_open(Board_UART7, &uart7params);
     if (!uart7handle) {
-        System_printf("The UART Temp did not open");
+        //System_printf("The UART Temp did not open");
     }
 
     Task_sleep(10);
@@ -141,9 +141,9 @@ void setup_temp_internal() {
     UART_read(uart7handle, &last_response, sizeof(last_response));
 
     if (last_response == addr_response2) {
-        System_printf("2nd response and last response are same!\n");
+        //System_printf("2nd response and last response are same!\n");
     } else {
-        System_printf("BEWARE: 2nd response and last response are NOT the same!\n");
+        //System_printf("BEWARE: 2nd response and last response are NOT the same!\n");
     }
     System_flush();
 
@@ -188,7 +188,7 @@ void setup_temp_internal() {
     Clock_construct(&clkTempStruct, (Clock_FuncPtr)clkTempFxn, 500, &clkParams);
     Clock_start(Clock_handle(&clkTempStruct));
 
-    System_printf("Temperature sensors setup\n");
+    //System_printf("Temperature sensors setup\n");
 }
 
 void setup_temp() {
