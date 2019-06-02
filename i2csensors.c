@@ -120,10 +120,10 @@ void initAcc()
     i2cTransaction.readCount = 1;
 
     if (!I2C_transfer(i2c, &i2cTransaction)) {
-        System_abort("Error Configuring Accelorometer\n");
+        System_abort("Error Reading Accelorometer Power Mode\n");
     }
     else {
-        System_printf("Accelerometer Configured!\n");
+        System_printf("Accelerometer Power Mode Read!\n");
     }
 
     accRxBuffer[0] = 0b00010001; //Normal power mode
@@ -135,10 +135,39 @@ void initAcc()
     i2cTransaction.readCount = 0;
 
     if (!I2C_transfer(i2c, &i2cTransaction)) {
-        System_abort("Error Changing Accelorometer\n");
+        System_abort("Error Changing Accelorometer Power Mode\n");
     }
     else {
-        System_printf("Accelerometer Changed!\n");
+        System_printf("Accelerometer Power Mode Changed!\n");
+    }
+
+    accTxBuffer[0] = 0x41; //Power mode set register
+    i2cTransaction.slaveAddress = Board_BMI160_ADDR;
+    i2cTransaction.writeBuf = accTxBuffer;
+    i2cTransaction.writeCount = 1;
+    i2cTransaction.readBuf = accRxBuffer;
+    i2cTransaction.readCount = 1;
+
+    if (!I2C_transfer(i2c, &i2cTransaction)) {
+        System_abort("Error Reading Accelorometer Range\n");
+    }
+    else {
+        System_printf("Accelerometer Range Read!\n");
+    }
+
+    accRxBuffer[0] = 0b00000101; //Normal power mode
+    accTxBuffer[1] = accRxBuffer[0];
+
+    i2cTransaction.writeBuf = accTxBuffer;
+    i2cTransaction.writeCount = 2;
+    i2cTransaction.readBuf = NULL;
+    i2cTransaction.readCount = 0;
+
+    if (!I2C_transfer(i2c, &i2cTransaction)) {
+        System_abort("Error Changing Accelorometer Range\n");
+    }
+    else {
+        System_printf("Accelerometer Range Changed!\n");
     }
 }
 
