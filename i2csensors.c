@@ -187,7 +187,7 @@ void readAcc()
         int i;
         for(i = 0; i < 6; i+= 2){
             acc = (int16_t)((accRxBuffer[i + 1] << 8) | accRxBuffer[i]);
-            convertedAcc[i/2] = (acc * 0.061)/1000;
+            convertedAcc[i/2] = ((acc * 0.061)/1000) * 9.8;
         }
     }
     else {
