@@ -49,7 +49,7 @@
 #include <ti/drivers/I2C.h>
 // #include <ti/drivers/SDSPI.h>
 // #include <ti/drivers/SPI.h>
-// #include <ti/drivers/UART.h>
+#include <ti/drivers/UART.h>
 // #include <ti/drivers/USBMSCHFatFs.h>
 // #include <ti/drivers/Watchdog.h>
 // #include <ti/drivers/WiFi.h>
@@ -58,10 +58,10 @@
 #include "driverlib/debug.h"
 #include "driverlib/gpio.h"
 #include "driverlib/interrupt.h"
-//#include "driverlib/pin_map.h"
+#include "driverlib/pin_map.h"
 //#include "driverlib/rom.h"
 //#include "driverlib/rom_map.h"
-//#include "driverlib/uart.h"
+#include "driverlib/uart.h"
 
 // GRLIB FILES
 #include "grlib/grlib.h"
@@ -74,22 +74,12 @@
 #include "driverlib/hibernate.h"
 #include "inc/hw_hibernate.h"
 
-#include <semaphore.h>
-
-// Motor files
-#include <ti/drivers/PWM.h>
-
-// Our header files:
-#include "GUI.h"
+// UART extra FILES
+#include "inc/hw_ints.h"
+#include "driverlib/debug.h"
+#include "driverlib/gpio.h"
 #include "i2csensors.h"
-//#include "ACC.h"
-#include <MotorControl.h>
-
-#define TASKSTACKSIZE  512
-
-uint32_t g_ui32SysClock;
-
-
+#include <semaphore.h>
 I2C_Handle      i2c;
 I2C_Params      gui_params;
 I2C_Params      lux_params;
@@ -105,7 +95,13 @@ tDMAControlTable psDMAControlTable[64];
 #else
 tDMAControlTable psDMAControlTable[64] __attribute__ ((aligned(1024)));
 #endif
+// Our header files:
+#include "GUI.h"
+#include <MotorControl.h>
+// Motor files
+#include <ti/drivers/PWM.h>
 
+uint32_t g_ui32SysClock;
 
 // TOGGLE GPIO LIGHTS // off = 0 on = 1
 void toggleLight(int light, int tog){
@@ -116,8 +112,13 @@ void toggleLight(int light, int tog){
     // add lights here if needed
 }
 
+/*
+ *  ======== Tasks ========
+ */
+
 // GUI Task Function
 Void guiRun() {
+	// add hwi disable line by line until it crashes?
     tContext sContext;
     bool bUpdate;
 
@@ -126,10 +127,10 @@ Void guiRun() {
     GrContextInit(&sContext, &g_sKentec320x240x16_SSD2119);
 
     // screen
-//    SysCtlPeripheralEnable(SYSCTL_PERIPH_UDMA);
-//    SysCtlDelay(10);
-//    uDMAControlBaseSet(&psDMAControlTable[0]);
-//    uDMAEnable();
+    //SysCtlPeripheralEnable(SYSCTL_PERIPH_UDMA);
+    //SysCtlDelay(10);
+    //uDMAControlBaseSet(&psDMAControlTable[0]);
+    //uDMAEnable();
     TouchScreenInit(g_ui32SysClock);
     TouchScreenCallbackSet(WidgetPointerMessage);
 
@@ -150,7 +151,6 @@ Void guiRun() {
 //    initAcc();
     // gui functionality
     GUI_init();
-
     while (1) {
 //        readLux();
 //        readAcc();
@@ -263,8 +263,8 @@ int main(void)
 
     Board_initGeneral();
     Board_initGPIO();
+    Board_initUART();
     Board_initI2C();
-
     Board_initPWM();
     MotorSetup();
 
@@ -272,23 +272,20 @@ int main(void)
 
     // Set the clocking to run directly from the crystal at 120MHz.
     g_ui32SysClock = SysCtlClockFreqSet((SYSCTL_XTAL_25MHZ | SYSCTL_OSC_MAIN
-                     | SYSCTL_USE_PLL |SYSCTL_CFG_VCO_480), 120000000);
-
+                   | SYSCTL_USE_PLL |SYSCTL_CFG_VCO_480), 120000000);
 
     setupI2C2();
 
     // Setup tasks
+    setup_temp();
     setup_gui_task();
     setup_lux_task();
     setup_acc_task();
 
-
     // Setup Hwis
     setup_adc_hwi();
 
-
     // Setup Swis
-
 
     /* Start BIOS */
     BIOS_start();
