@@ -138,7 +138,7 @@ Void guiRun() {
         if(bUpdate) run_timer();
         WidgetMessageQueueProcess();
         System_flush();
-        Task_sleep(100);
+        Task_sleep(10);
     }
 }
 
