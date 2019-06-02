@@ -51,15 +51,11 @@
 
 /* Example/Board Header files */
 #include "Board.h"
-#include <MotorControl.h>
+
 #include "GUI.h"
 
 float convertedLux;
 float convertedAcc[3];
-float absAcc;
-float accx;
-float accy;
-float accz;
 
 I2C_Handle      i2c;
 I2C_Transaction i2cTransaction;
@@ -86,7 +82,9 @@ int getLux(int res)
 
 int getAcc(int res)
 {
-    return (int)absAcc;
+    int absAcc;
+    absAcc = (int)(res * sqrt(pow(convertedAcc[0],2) + pow(convertedAcc[1],2) + pow(convertedAcc[2],2)));
+    return absAcc;
 }
 
 void initLux()
@@ -105,7 +103,7 @@ void initLux()
         System_abort("Error Initiating Lux Sensor\n");
     }
     else {
-        //System_printf("Lux Sensor Configured!\n");
+        System_printf("Lux Sensor Configured!\n");
     }
 }
 
@@ -125,7 +123,7 @@ void initAcc()
         System_abort("Error Reading Accelorometer Power Mode\n");
     }
     else {
-        //System_printf("Accelerometer Power Mode Read!\n");
+        System_printf("Accelerometer Power Mode Read!\n");
     }
 
     accRxBuffer[0] = 0b00010001; //Normal power mode
@@ -140,7 +138,7 @@ void initAcc()
         System_abort("Error Changing Accelorometer Power Mode\n");
     }
     else {
-        //System_printf("Accelerometer Power Mode Changed!\n");
+        System_printf("Accelerometer Power Mode Changed!\n");
     }
 
     accTxBuffer[0] = 0x41; //Power mode set register
@@ -154,7 +152,7 @@ void initAcc()
         System_abort("Error Reading Accelorometer Range\n");
     }
     else {
-        //System_printf("Accelerometer Range Read!\n");
+        System_printf("Accelerometer Range Read!\n");
     }
 
     accRxBuffer[0] = 0b00000101; //Normal power mode
@@ -169,7 +167,7 @@ void initAcc()
         System_abort("Error Changing Accelorometer Range\n");
     }
     else {
-        //System_printf("Accelerometer Range Changed!\n");
+        System_printf("Accelerometer Range Changed!\n");
     }
 }
 
@@ -200,7 +198,7 @@ void readLux()
 
     }
     else {
-        //System_printf("I2C Bus fault\n");
+        System_printf("I2C Bus fault\n");
     }
 }
 
@@ -216,20 +214,14 @@ void readAcc()
 //    char accStr[40];
 
     if (I2C_transfer(i2c, &i2cTransaction)) {
-        accx = (int16_t)((accRxBuffer[1] << 8) | accRxBuffer[0]);
-        accy = (int16_t)((accRxBuffer[3] << 8) | accRxBuffer[2]);
-        accz = (int16_t)((accRxBuffer[5] << 8) | accRxBuffer[4]);
-        convertedAcc[0] = ((accx * 0.061)/1000) * 9.8;
-        convertedAcc[1] = ((accy * 0.061)/1000) * 9.8;
-        convertedAcc[2] = ((accz * 0.061)/1000) * 9.8;
-        absAcc = sqrt(pow(convertedAcc[0],2) + pow(convertedAcc[1],2) + pow(convertedAcc[2],2));
-        if(absAcc > getUserSetAccelerometer())
-        {
-            emergencyStop();
+        int i;
+        for(i = 0; i < 6; i+= 2){
+            acc = (int16_t)((accRxBuffer[i + 1] << 8) | accRxBuffer[i]);
+            convertedAcc[i/2] = ((acc * 0.061)/1000) * 9.8;
         }
     }
     else {
-        //System_printf("I2C Bus fault\n");
+        System_printf("I2C Bus fault\n");
     }
 }
 
