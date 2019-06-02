@@ -78,8 +78,8 @@
 #include "inc/hw_ints.h"
 #include "driverlib/debug.h"
 #include "driverlib/gpio.h"
-#include "i2csensors.h"
-#include <semaphore.h>
+//#include <semaphore.h>
+
 I2C_Handle      i2c;
 I2C_Params      gui_params;
 I2C_Params      lux_params;
@@ -97,9 +97,22 @@ tDMAControlTable psDMAControlTable[64] __attribute__ ((aligned(1024)));
 #endif
 // Our header files:
 #include "GUI.h"
+#include "temp.h"
 #include <MotorControl.h>
+#include "i2csensors.h"
 // Motor files
 #include <ti/drivers/PWM.h>
+
+#include <ti/sysbios/gates/GateMutexPri.h>
+
+// if using GateMutex uncomment such lines and comment out the semaphore ones
+UInt gateKey;
+GateMutexPri_Handle gampHandle;
+GateMutexPri_Params gampParams;
+/* Construct a GateMutexPri object to be use as a resource lock */
+
+//gateKey = GateMutexPri_enter(gampHandle);
+//GateMutexPri_leave(gampHandle,gateKey);
 
 uint32_t g_ui32SysClock;
 
@@ -149,7 +162,7 @@ Void guiRun() {
 //    initLux();
 //    // acc functionality
 //    initAcc();
-    // gui functionality
+//     gui functionality
     GUI_init();
     while (1) {
 //        readLux();
@@ -166,11 +179,15 @@ Void guiRun() {
 Void luxRun() {
 
     //=====CODE FOR INITIATING LIGH REG========
-
+    gateKey = GateMutexPri_enter(gampHandle);
     initLux();
+    GateMutexPri_leave(gampHandle,gateKey);
 
     while (1) {
+        gateKey = GateMutexPri_enter(gampHandle);
         readLux();
+        GateMutexPri_leave(gampHandle,gateKey);
+
         System_flush();
         Task_sleep(100);
     }
@@ -180,11 +197,15 @@ Void luxRun() {
 Void accRun() {
 
     //======CODE FOR CONFIGURING ACC=============
-
+    gateKey = GateMutexPri_enter(gampHandle);
     initAcc();
+    GateMutexPri_leave(gampHandle,gateKey);
 
     while (1) {
+        gateKey = GateMutexPri_enter(gampHandle);
         readAcc();
+        GateMutexPri_leave(gampHandle,gateKey);
+
         System_flush();
         Task_sleep(100);
     }
@@ -235,25 +256,23 @@ void setupI2C2( void )
 {
     //=======CREATE I2C FOR USAGE===============
 
-    I2C_Params_init(&lux_params);
-    lux_params.bitRate = I2C_400kHz;
-    i2c = I2C_open(Board_I2C_LUX, &lux_params);
+    I2C_Params_init(&gui_params);
+    gui_params.bitRate = I2C_400kHz;
+    i2c = I2C_open(Board_I2C_LUX, &gui_params);
     if (i2c == NULL) {
         System_abort("Error Initializing I2C\n");
     }
     else {
         System_printf("I2C Initialized!\n");
     }
-    //=======CREATE I2C FOR USAGE===============
+}
 
-    I2C_Params_init(&acc_params);
-    acc_params.bitRate = I2C_400kHz;
-    i2c = I2C_open(Board_I2C_LUX, &acc_params);
-    if (i2c == NULL) {
-        System_abort("Error Initializing I2C\n");
-    }
-    else {
-        System_printf("I2C Initialized!\n");
+void setupMutexPri()
+{
+    GateMutexPri_Params_init(&gampParams);
+    gampHandle = GateMutexPri_create(&gampParams, NULL);
+    if (gampHandle == NULL) {
+        System_abort("Gate Mutex Pri create failed");
     }
 }
 
@@ -274,13 +293,19 @@ int main(void)
     g_ui32SysClock = SysCtlClockFreqSet((SYSCTL_XTAL_25MHZ | SYSCTL_OSC_MAIN
                    | SYSCTL_USE_PLL |SYSCTL_CFG_VCO_480), 120000000);
 
+    setupMutexPri();
+
     setupI2C2();
+
+
 
     // Setup tasks
     setup_temp();
     setup_gui_task();
     setup_lux_task();
     setup_acc_task();
+
+
 
     // Setup Hwis
     setup_adc_hwi();

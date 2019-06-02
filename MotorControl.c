@@ -244,7 +244,9 @@ void SetupMotorClock(void)
 
 void initializeMotorStructValues(void)
 {
-    Motor_Control.pwmPeriod       = 3000;      // Period and duty in microseconds
+    //THIS IS WHAT FLOYD CHANGED=====
+    Motor_Control.pwmPeriod       = 100;      // Period and duty in microseconds
+    //===============================
     Motor_Control.duty            = 0;          // set motor speed
     Motor_Control.interruptCount  = 0;
     Motor_Control.currentRPM      = 0;
