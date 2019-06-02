@@ -219,7 +219,7 @@ void readAcc()
         for(i = 0; i < 6; i+= 2){
             acc = (int16_t)((accRxBuffer[i + 1] << 8) | accRxBuffer[i]);
             convertedAcc[i/2] = ((acc * 0.061)/500) * 9.8;
-            if(convertedAcc[i/2] > 9)
+            if(convertedAcc[i/2] > setAcc)
             {
                 emergencyStop();
             }
