@@ -34,8 +34,9 @@ struct motor_control
     PWM_Handle  pwm1;
     PWM_Params  params;
     uint8_t     emergencyStop;
-    int16_t     pwmPeriod, duty;
+    double     pwmPeriod, duty;
     int32_t     currentRPM, lastRPM, requiredRPM;
+    int32_t     error, prevError;
     uint32_t    interruptCount;
     uint32_t    MaxAcceleration;
     int32_t     currentAccelerationRadss;
@@ -116,8 +117,10 @@ void HALL_C_HWI(unsigned int index)
 void clk0Fxn(UArg arg0)
 {
     Motor_Control.lastRPM=Motor_Control.currentRPM;
+    Motor_Control.prevError=Motor_Control.error;
     double revolutions = (double)Motor_Control.interruptCount/24.0;
     Motor_Control.currentRPM = 600*revolutions;
+    Motor_Control.error = Motor_Control.requiredRPM -Motor_Control.currentRPM;
     Motor_Control.interruptCount=0;
     Swi_post(motorSwiHandle);
 }
@@ -131,7 +134,7 @@ void StartMotor(void)
     uint8_t hallC = GPIO_read(Board_HALL_C);
 
 
-    PWM_setDuty(Motor_Control.pwm1, 1000);
+    PWM_setDuty(Motor_Control.pwm1, 50);
 
     if(!hallA && !hallB && hallC){
         GPIO_write(Board_STATE1, Board_OFF);
@@ -163,14 +166,12 @@ void StartMotor(void)
         GPIO_write(Board_STATE2, Board_OFF);
         GPIO_write(Board_STATE0, Board_ON);
     }
-    Motor_Control.duty = 100;
+    Motor_Control.duty = 4;
 }
 
 
 void MotorControlSwi(UArg arg0, UArg arg1)
 {
-    int32_t motorError = Motor_Control.requiredRPM -Motor_Control.currentRPM;
-
     Motor_Control.currentAccelerationRadss = ((Motor_Control.lastRPM -Motor_Control.currentRPM)*0.10472)*10;
 
     /*Kick start motor*/
@@ -184,12 +185,26 @@ void MotorControlSwi(UArg arg0, UArg arg1)
     if(Motor_Control.currentAccelerationRadss < Motor_Control.MaxAcceleration || Motor_Control.currentAccelerationRadss > -Motor_Control.MaxAcceleration){
         GPIO_write(Board_LED2, Board_OFF);
 
+        double integral = (double)Motor_Control.prevError*0.1 + (((double)Motor_Control.prevError-(double)Motor_Control.prevError)*0.1)/2;
+        double derivative = ((double)Motor_Control.prevError-(double)Motor_Control.prevError)/0.1;
+
         if (Motor_Control.emergencyStop)
         {   /*set duty cycle in emergency stop scenario*/
-            Motor_Control.duty = (int)(Motor_Control.duty+motorError*0.08);
+            Motor_Control.duty = (int)(Motor_Control.duty+Motor_Control.error*0.001);
+            /*Integral control*/
+            Motor_Control.duty = (int)(Motor_Control.duty+0.1*integral);
+
+
+
         }else
         {   /*set duty cycle in not emergency stop scenario*/
-            Motor_Control.duty = (int)(Motor_Control.duty+motorError*0.02);
+            Motor_Control.duty = (double)(Motor_Control.duty+Motor_Control.error*0.006);
+            /*Integral control*/
+            Motor_Control.duty = (double)(Motor_Control.duty-0.05*integral);
+            /*derivative control*/
+            Motor_Control.duty = (double)(Motor_Control.duty-0.09*derivative);
+
+
         }
 
             /*check if motor duty cycle is negative*/
@@ -205,7 +220,7 @@ void MotorControlSwi(UArg arg0, UArg arg1)
             }
 
             /*reset duty cycle if motor is stationary*/
-            if(Motor_Control.duty < 100 && !Motor_Control.requiredRPM)
+            if(Motor_Control.duty < 4 && !Motor_Control.requiredRPM)
             {
                 Motor_Control.duty = 0;
             }
@@ -219,7 +234,6 @@ void MotorControlSwi(UArg arg0, UArg arg1)
     } else{
         GPIO_write(Board_LED2, Board_ON);
     }
-
 
     PWM_setDuty(Motor_Control.pwm1, Motor_Control.duty);
 }
@@ -244,9 +258,7 @@ void SetupMotorClock(void)
 
 void initializeMotorStructValues(void)
 {
-    //THIS IS WHAT FLOYD CHANGED=====
     Motor_Control.pwmPeriod       = 100;      // Period and duty in microseconds
-    //===============================
     Motor_Control.duty            = 0;          // set motor speed
     Motor_Control.interruptCount  = 0;
     Motor_Control.currentRPM      = 0;
@@ -254,6 +266,8 @@ void initializeMotorStructValues(void)
     Motor_Control.requiredRPM     = 0;
     Motor_Control.MaxAcceleration = 100;
     Motor_Control.emergencyStop   = 0;
+    Motor_Control.prevError       = 0;
+    Motor_Control.error           = 0;
 }
 
 
