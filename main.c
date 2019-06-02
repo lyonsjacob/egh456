@@ -152,7 +152,7 @@ Void luxRun() {
         readLux();
 
         System_flush();
-        Task_sleep(100);
+        Task_sleep(500);//500 because freq of 2
     }
 }
 
@@ -166,7 +166,7 @@ Void accRun() {
         readAcc();
 
         System_flush();
-        Task_sleep(100);
+        Task_sleep(5); //5 because freq of 200Hz
     }
 }
 

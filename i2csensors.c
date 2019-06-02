@@ -51,11 +51,15 @@
 
 /* Example/Board Header files */
 #include "Board.h"
-
+#include <MotorControl.h>
 #include "GUI.h"
 
 float convertedLux;
 float convertedAcc[3];
+float absAcc;
+float accx;
+float accy;
+float accz;
 
 I2C_Handle      i2c;
 I2C_Transaction i2cTransaction;
@@ -82,9 +86,7 @@ int getLux(int res)
 
 int getAcc(int res)
 {
-    int absAcc;
-    absAcc = (int)(res * sqrt(pow(convertedAcc[0],2) + pow(convertedAcc[1],2) + pow(convertedAcc[2],2)));
-    return absAcc;
+    return (int)absAcc;
 }
 
 void initLux()
@@ -214,10 +216,16 @@ void readAcc()
 //    char accStr[40];
 
     if (I2C_transfer(i2c, &i2cTransaction)) {
-        int i;
-        for(i = 0; i < 6; i+= 2){
-            acc = (int16_t)((accRxBuffer[i + 1] << 8) | accRxBuffer[i]);
-            convertedAcc[i/2] = ((acc * 0.061)/1000) * 9.8;
+        accx = (int16_t)((accRxBuffer[1] << 8) | accRxBuffer[0]);
+        accy = (int16_t)((accRxBuffer[3] << 8) | accRxBuffer[2]);
+        accz = (int16_t)((accRxBuffer[5] << 8) | accRxBuffer[4]);
+        convertedAcc[0] = ((accx * 0.061)/1000) * 9.8;
+        convertedAcc[1] = ((accy * 0.061)/1000) * 9.8;
+        convertedAcc[2] = ((accz * 0.061)/1000) * 9.8;
+        absAcc = sqrt(pow(convertedAcc[0],2) + pow(convertedAcc[1],2) + pow(convertedAcc[2],2));
+        if(absAcc > getUserSetAccelerometer())
+        {
+            emergencyStop();
         }
     }
     else {
