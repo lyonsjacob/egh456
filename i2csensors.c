@@ -75,14 +75,15 @@ uint8_t         accRxBuffer[6];
 #define ACC_REG_CONFIGURATION               0x00
 
 
-float getLUX(void)
+int getLUX(int res)
 {
-    return convertedLux;
+    return res * convertedLux;
 }
 
-float* getAcc(void)
+int getAcc(int res)
 {
-    return convertedAcc;
+    int absAcc = (int)(res * sqrt(sqrt(convertedAcc[0]^2 + convertedAcc[1]^2) + convertedAcc[2]^2));
+    return absAcc;
 }
 
 void initLux()
