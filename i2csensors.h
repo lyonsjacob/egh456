@@ -3,8 +3,8 @@
 
 
 //user get variables
-float getLux();
-float getAcc();
+int getLux(int res);
+int getAcc(int res);
 
 //init functions
 void initLux();

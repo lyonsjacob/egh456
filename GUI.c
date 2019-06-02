@@ -21,6 +21,7 @@
 #include "MotorControl.h"
 #include "main.h"
 #include "temp.h"
+#include "i2csensors.h"
 
 
 struct Analytic {
@@ -295,15 +296,16 @@ void turnOnGraphVariable(tWidget *psWidget, uint32_t bSelected){
             variables[ui32Idx].draw = true;
 
             //if(ui32Idx==1) toSet = getPower();
-            //if(ui32Idx==2) toSet = getLUX();
-            if(ui32Idx==2){
-                toSet = get_temp1(50);;
-            }
+            if(ui32Idx==1) toSet = getLux(200);
+            if(ui32Idx==2) toSet = get_temp1(50);
+            if(ui32Idx==3) toSet = getAcc(50);
 
             if(ui32Idx == 4){
                 toSet = getRPM();
                 if(disp_tab == 0) changeSpeedDisplay(toSet);
             }
+
+            if(toSet > 2500) toSet = 2500;
 
             variables[ui32Idx].value[0] = toSet;
             variables[ui32Idx].time = 0;
@@ -491,15 +493,16 @@ void drawAllAnalytics(){
         toSet = 0;
 
         //if(i==1) toSet = getPower();
-        //if(i==2) toSet = getLUX();
-        if(i==2){
-            toSet = get_temp1(50);
+        if(i==1) toSet = getLux(200);
+        if(i==2) toSet = get_temp1(50);
+        if(i==3) toSet = getAcc(50);
 
-        }
         if(i==4){
             toSet = getRPM();
             if(disp_tab == 0) changeSpeedDisplay(toSet);
         }
+
+        if(toSet > 2500) toSet = 2500;
 
         variables[i].value[variables[i].time] = toSet;
 
