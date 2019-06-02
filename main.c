@@ -138,7 +138,7 @@ Void guiRun() {
         if(bUpdate) run_timer();
         WidgetMessageQueueProcess();
         System_flush();
-        Task_sleep(100);
+        Task_sleep(10);
     }
 }
 
@@ -152,7 +152,7 @@ Void luxRun() {
         readLux();
 
         System_flush();
-        Task_sleep(100);
+        Task_sleep(500);//500 because freq of 2
     }
 }
 
@@ -166,7 +166,7 @@ Void accRun() {
         readAcc();
 
         System_flush();
-        Task_sleep(100);
+        Task_sleep(5); //5 because freq of 200Hz
     }
 }
 
@@ -222,7 +222,7 @@ void setupI2C2( void )
         System_abort("Error Initializing I2C\n");
     }
     else {
-        System_printf("I2C Initialized!\n");
+        //System_printf("I2C Initialized!\n");
     }
 }
 

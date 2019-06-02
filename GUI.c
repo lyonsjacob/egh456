@@ -21,6 +21,7 @@
 #include "MotorControl.h"
 #include "main.h"
 #include "temp.h"
+#include "i2csensors.h"
 
 
 struct Analytic {
@@ -170,29 +171,29 @@ Canvas(motorControl, tabs, 0, 0, &g_sKentec320x240x16_SSD2119, 0,
 
 tSliderWidget sliders[] = {
    SliderStruct(tabs, sliders+1, 0,
-               &g_sKentec320x240x16_SSD2119, 170, 60, 130, 30, 0, 100, 0,
+               &g_sKentec320x240x16_SSD2119, 170, 60, 130, 30, 0, 20, 10,
                (SL_STYLE_FILL | SL_STYLE_BACKG_FILL | SL_STYLE_OUTLINE |
                 SL_STYLE_TEXT | SL_STYLE_BACKG_TEXT),
                ClrGray, ClrBlack, ClrSilver, ClrWhite, ClrWhite,
-               &g_sFontCm14, "0 mps2", 0, 0, OnSliderChange),
+               &g_sFontCm14, "10 mps2", 0, 0, OnSliderChange),
    SliderStruct(tabs, sliders+2, 0,
-               &g_sKentec320x240x16_SSD2119, 20, 140, 130, 30, 800, 1200, 0,
+               &g_sKentec320x240x16_SSD2119, 20, 140, 130, 30, 2800, 3000, 0,
                (SL_STYLE_FILL | SL_STYLE_BACKG_FILL | SL_STYLE_OUTLINE |
                 SL_STYLE_TEXT | SL_STYLE_BACKG_TEXT),
                ClrGray, ClrBlack, ClrSilver, ClrWhite, ClrWhite,
-               &g_sFontCm14, "800 mA", 0, 0, OnSliderChange),
+               &g_sFontCm14, "2800 mA", 0, 0, OnSliderChange),
    SliderStruct(tabs, sliders+3, 0,
-               &g_sKentec320x240x16_SSD2119, 170, 140, 130, 30, 30, 60, 0,
+               &g_sKentec320x240x16_SSD2119, 170, 140, 130, 30, 28, 35, 30,
                (SL_STYLE_FILL | SL_STYLE_BACKG_FILL | SL_STYLE_OUTLINE |
                 SL_STYLE_TEXT | SL_STYLE_BACKG_TEXT),
                ClrGray, ClrBlack, ClrSilver, ClrWhite, ClrWhite,
                &g_sFontCm14, "30 celsius", 0, 0, OnSliderChange),
     SliderStruct(tabs, &motorControl,0,
-                &g_sKentec320x240x16_SSD2119, 20, 60, 130, 30, 0, 3000, 0,
+                &g_sKentec320x240x16_SSD2119, 20, 60, 130, 30, 0, 4000, 1000,
                 (SL_STYLE_FILL | SL_STYLE_BACKG_FILL | SL_STYLE_OUTLINE |
                  SL_STYLE_TEXT | SL_STYLE_BACKG_TEXT),
                 ClrGray, ClrBlack, ClrSilver, ClrWhite, ClrWhite,
-                &g_sFontCm14, "0 rpm", 0, 0, OnSliderChange),
+                &g_sFontCm14, "1000 rpm", 0, 0, OnSliderChange),
 };
 
 
@@ -252,8 +253,8 @@ void paintGraph(tWidget *psWidget, tContext *psContext){
         int yy =5;
         yy-=y;
         static char val[5];
-        usprintf(val, "%d",y*500);
-        GrStringDraw(psContext, val, -1, 20, 60+yy*20, 0);
+        usprintf(val, "%d",y*10);
+        GrStringDraw(psContext, val, -1, 20, 54+yy*20, 0);
     }
 
     //clear lines
@@ -276,7 +277,7 @@ void paintGraph(tWidget *psWidget, tContext *psContext){
                     if(i==3) GrContextForegroundSet(psContext, ClrCyan);
                     if(i==4) GrContextForegroundSet(psContext, ClrSnow);
 
-                    GrLineDraw(psContext, 51+j*20, 160-((int)variables[i].value[j]/20), 50+(j+1)*20, 160-((int)variables[i].value[j+1]/20));
+                    GrLineDraw(psContext, 51+j*20, 160-(variables[i].value[j]*2), 50+(j+1)*20, 160-(variables[i].value[j+1]*2));
                 } else {
                     break;
                 }
@@ -292,18 +293,19 @@ void turnOnGraphVariable(tWidget *psWidget, uint32_t bSelected){
     for(ui32Idx = 0; ui32Idx < 5; ui32Idx++){
         if((psWidget == (tWidget *)(set_variables + ui32Idx)) && (variables[ui32Idx].draw == false)){
 
-            variables[ui32Idx].draw = true;
+            if(ui32Idx!=0) variables[ui32Idx].draw = true; //THIS statment draws and doesnt allow power func
 
             //if(ui32Idx==1) toSet = getPower();
-            //if(ui32Idx==2) toSet = getLUX();
-            if(ui32Idx==2){
-                toSet = get_temp1(50);;
-            }
+            if(ui32Idx==1) toSet = getLux(1);
+            if(ui32Idx==2) toSet = get_temp2(1);
+            if(ui32Idx==3) toSet = getAcc(1);
 
             if(ui32Idx == 4){
-                toSet = getRPM();
-                if(disp_tab == 0) changeSpeedDisplay(toSet);
+                toSet = getRPM()/100;
+                if(disp_tab == 0) changeSpeedDisplay(toSet*100);
             }
+
+            if(toSet > 49) toSet = 50;
 
             variables[ui32Idx].value[0] = toSet;
             variables[ui32Idx].time = 0;
@@ -491,15 +493,16 @@ void drawAllAnalytics(){
         toSet = 0;
 
         //if(i==1) toSet = getPower();
-        //if(i==2) toSet = getLUX();
-        if(i==2){
-            toSet = get_temp1(50);
+        if(i==1) toSet = getLux(1);
+        if(i==2) toSet = get_temp2(1);
+        if(i==3) toSet = getAcc(1);
 
-        }
         if(i==4){
-            toSet = getRPM();
-            if(disp_tab == 0) changeSpeedDisplay(toSet);
+            toSet = getRPM()/100;
+            if(disp_tab == 0) changeSpeedDisplay(toSet*100);
         }
+
+        if(toSet > 49) toSet = 50;
 
         variables[i].value[variables[i].time] = toSet;
 
@@ -516,6 +519,7 @@ void GUI_init(){
     //
     // Add the first panel to the widget tree.
     //
+    speed = 1000; temp = 30; acc = 10;
     disp_tab=0, sec=0, hour=0, min=0;
     WidgetAdd(WIDGET_ROOT, (tWidget *)tabs);
     WidgetAdd(WIDGET_ROOT, (tWidget *)&startButton);
