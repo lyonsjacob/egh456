@@ -145,7 +145,7 @@ void readLux()
     i2cTransaction.readBuf = luxRxBuffer;
     i2cTransaction.readCount = 2;
 
-    char luxStr[40];
+//    char luxStr[40];
     uint16_t result, exponent;
 
     if (I2C_transfer(i2c, &i2cTransaction)) {
@@ -154,8 +154,6 @@ void readLux()
         result = lux & 0x0FFF;
         exponent = (lux & 0xF000) >> 12;
         convertedLux = result * (0.01 * exp2(exponent));
-        sprintf(luxStr, "Lux: %5.2f\n", convertedLux);
-        System_printf("%s\n", luxStr);
         if(convertedLux < 1){
             changeDisplayToNight();
         }
@@ -178,15 +176,13 @@ void readAcc()
     i2cTransaction.readBuf = accRxBuffer;
     i2cTransaction.readCount = 6;
 
-    char accStr[40];
+//    char accStr[40];
 
     if (I2C_transfer(i2c, &i2cTransaction)) {
         int i;
         for(i = 0; i < 6; i += 2){
             acc = (int16_t)((accRxBuffer[i + 1] << 8) | accRxBuffer[i]);
             convertedAcc = (acc * 0.061)/1000;
-            sprintf(accStr, "Itteration: %d, Acc: %5.2f\n", i, convertedAcc);
-            System_printf("%s\n", accStr);
         }
     }
     else {

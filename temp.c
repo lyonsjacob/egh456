@@ -195,7 +195,7 @@ void setup_temp() {
     Task_Params taskParams;
     Task_Params_init(&taskParams);
     taskParams.stackSize = TEMPTASKSTACKSIZE * 2;
-    taskParams.priority = 5;
+    taskParams.priority = 6;
     Task_create((Task_FuncPtr)setup_temp_internal, &taskParams, NULL);
 }
 

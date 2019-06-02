@@ -16,27 +16,6 @@
 /* BIOS Header files */
 #include <ti/sysbios/BIOS.h>
 #include <ti/sysbios/knl/Task.h>//int main(void)
-//{
-//    Task_Params taskParams;
-//
-//    /* Call board init functions */
-//    Board_initGeneral();
-//    Board_initGPIO();
-//    Board_initI2C();
-//
-//    setupI2C2();
-//
-//    /* Construct opt3001 Task thread */
-//    Task_Params_init(&taskParams);
-//    taskParams.stackSize = TASKSTACKSIZE;
-//    taskParams.stack = &task0Stack;
-//    Task_construct(&task0Struct, (Task_FuncPtr)luxFxn, &taskParams, NULL);
-//
-//    /* Start BIOS */
-//    BIOS_start();
-//
-//    return (0);
-//}
 
 #include <xdc/runtime/Error.h>
 #include <xdc/runtime/System.h>
@@ -111,9 +90,6 @@ GateMutexPri_Handle gampHandle;
 GateMutexPri_Params gampParams;
 /* Construct a GateMutexPri object to be use as a resource lock */
 
-//gateKey = GateMutexPri_enter(gampHandle);
-//GateMutexPri_leave(gampHandle,gateKey);
-
 uint32_t g_ui32SysClock;
 
 // TOGGLE GPIO LIGHTS // off = 0 on = 1
@@ -140,10 +116,6 @@ Void guiRun() {
     GrContextInit(&sContext, &g_sKentec320x240x16_SSD2119);
 
     // screen
-    //SysCtlPeripheralEnable(SYSCTL_PERIPH_UDMA);
-    //SysCtlDelay(10);
-    //uDMAControlBaseSet(&psDMAControlTable[0]);
-    //uDMAEnable();
     TouchScreenInit(g_ui32SysClock);
     TouchScreenCallbackSet(WidgetPointerMessage);
 
@@ -158,15 +130,10 @@ Void guiRun() {
     DateTimeDefaultSet(10, 30);
     /*******************************/
     /*******************************/
-//    // lux functionality
-//    initLux();
-//    // acc functionality
-//    initAcc();
+
 //     gui functionality
     GUI_init();
     while (1) {
-//        readLux();
-//        readAcc();
         bUpdate = DateTimeDisplayGet();
         if(bUpdate) run_timer();
         WidgetMessageQueueProcess();
@@ -179,14 +146,10 @@ Void guiRun() {
 Void luxRun() {
 
     //=====CODE FOR INITIATING LIGH REG========
-    gateKey = GateMutexPri_enter(gampHandle);
     initLux();
-    GateMutexPri_leave(gampHandle,gateKey);
 
     while (1) {
-        gateKey = GateMutexPri_enter(gampHandle);
         readLux();
-        GateMutexPri_leave(gampHandle,gateKey);
 
         System_flush();
         Task_sleep(100);
@@ -197,14 +160,10 @@ Void luxRun() {
 Void accRun() {
 
     //======CODE FOR CONFIGURING ACC=============
-    gateKey = GateMutexPri_enter(gampHandle);
     initAcc();
-    GateMutexPri_leave(gampHandle,gateKey);
-
+    System_flush();
     while (1) {
-        gateKey = GateMutexPri_enter(gampHandle);
         readAcc();
-        GateMutexPri_leave(gampHandle,gateKey);
 
         System_flush();
         Task_sleep(100);
@@ -231,7 +190,7 @@ void setup_adc_hwi(){
 void setup_gui_task(){
     Task_Params gui_params;
     Task_Params_init(&gui_params);
-    gui_params.stackSize = 2048;
+    gui_params.stackSize = 1024;
     gui_params.priority = 1;
     Task_create((Task_FuncPtr)guiRun, &gui_params, NULL);
 }
@@ -239,7 +198,7 @@ void setup_gui_task(){
 void setup_lux_task(){
     Task_Params lux_params;
     Task_Params_init(&lux_params);
-    lux_params.stackSize = 1024;
+    lux_params.stackSize = 512;
     lux_params.priority = 2;
     Task_create((Task_FuncPtr)luxRun, &lux_params, NULL);
 }
@@ -247,8 +206,8 @@ void setup_lux_task(){
 void setup_acc_task(){
     Task_Params acc_params;
     Task_Params_init(&acc_params);
-    acc_params.stackSize = 1024;
-    acc_params.priority = 3;
+    acc_params.stackSize = 512;
+    acc_params.priority = 5;
     Task_create((Task_FuncPtr)accRun, &acc_params, NULL);
 }
 
@@ -256,9 +215,9 @@ void setupI2C2( void )
 {
     //=======CREATE I2C FOR USAGE===============
 
-    I2C_Params_init(&gui_params);
-    gui_params.bitRate = I2C_400kHz;
-    i2c = I2C_open(Board_I2C_LUX, &gui_params);
+    I2C_Params_init(&lux_params);
+    lux_params.bitRate = I2C_400kHz;
+    i2c = I2C_open(Board_I2C_LUX, &lux_params);
     if (i2c == NULL) {
         System_abort("Error Initializing I2C\n");
     }
