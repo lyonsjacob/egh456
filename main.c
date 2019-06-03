@@ -137,7 +137,7 @@ Void guiRun() {
         bUpdate = DateTimeDisplayGet();
         if(bUpdate) run_timer();
         WidgetMessageQueueProcess();
-        System_flush();
+        //System_flush();
         Task_sleep(10);
     }
 }

@@ -181,15 +181,15 @@ tSliderWidget sliders[] = {
                (SL_STYLE_FILL | SL_STYLE_BACKG_FILL | SL_STYLE_OUTLINE |
                 SL_STYLE_TEXT | SL_STYLE_BACKG_TEXT),
                ClrGray, ClrBlack, ClrSilver, ClrWhite, ClrWhite,
-               &g_sFontCm14, "2800 mA", 0, 0, OnSliderChange),
+               &g_sFontCm14, "0 mA", 0, 0, OnSliderChange),
    SliderStruct(tabs, sliders+3, 0,
-               &g_sKentec320x240x16_SSD2119, 170, 140, 130, 30, 28, 35, 30,
+               &g_sKentec320x240x16_SSD2119, 170, 140, 130, 30, 0, 40, 30,
                (SL_STYLE_FILL | SL_STYLE_BACKG_FILL | SL_STYLE_OUTLINE |
                 SL_STYLE_TEXT | SL_STYLE_BACKG_TEXT),
                ClrGray, ClrBlack, ClrSilver, ClrWhite, ClrWhite,
                &g_sFontCm14, "30 celsius", 0, 0, OnSliderChange),
     SliderStruct(tabs, &motorControl,0,
-                &g_sKentec320x240x16_SSD2119, 20, 60, 130, 30, 0, 4000, 1000,
+                &g_sKentec320x240x16_SSD2119, 20, 60, 130, 30, 0, 4534, 1000,
                 (SL_STYLE_FILL | SL_STYLE_BACKG_FILL | SL_STYLE_OUTLINE |
                  SL_STYLE_TEXT | SL_STYLE_BACKG_TEXT),
                 ClrGray, ClrBlack, ClrSilver, ClrWhite, ClrWhite,
