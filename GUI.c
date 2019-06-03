@@ -177,7 +177,7 @@ tSliderWidget sliders[] = {
                ClrGray, ClrBlack, ClrSilver, ClrWhite, ClrWhite,
                &g_sFontCm14, "10 mps2", 0, 0, OnSliderChange),
    SliderStruct(tabs, sliders+2, 0,
-               &g_sKentec320x240x16_SSD2119, 20, 140, 130, 30, 2800, 3000, 0,
+               &g_sKentec320x240x16_SSD2119, 20, 140, 130, 30, 2800, 3001, 0,
                (SL_STYLE_FILL | SL_STYLE_BACKG_FILL | SL_STYLE_OUTLINE |
                 SL_STYLE_TEXT | SL_STYLE_BACKG_TEXT),
                ClrGray, ClrBlack, ClrSilver, ClrWhite, ClrWhite,

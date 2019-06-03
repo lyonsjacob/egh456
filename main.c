@@ -138,7 +138,7 @@ Void guiRun() {
         if(bUpdate) run_timer();
         WidgetMessageQueueProcess();
         //System_flush();
-        Task_sleep(10);
+        Task_sleep(30);
     }
 }
 
@@ -151,7 +151,7 @@ Void luxRun() {
     while (1) {
         readLux();
 
-        System_flush();
+        //System_flush();
         Task_sleep(500);//500 because freq of 2
     }
 }
@@ -161,11 +161,11 @@ Void accRun() {
 
     //======CODE FOR CONFIGURING ACC=============
     initAcc();
-    System_flush();
+    //System_flush();
     while (1) {
         readAcc();
 
-        System_flush();
+        //System_flush();
         Task_sleep(5); //5 because freq of 200Hz
     }
 }
@@ -221,9 +221,9 @@ void setupI2C2( void )
     if (i2c == NULL) {
         System_abort("Error Initializing I2C\n");
     }
-    else {
+    //else {
         //System_printf("I2C Initialized!\n");
-    }
+    //}
 }
 
 void setupMutexPri()

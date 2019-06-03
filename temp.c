@@ -140,12 +140,13 @@ void setup_temp_internal() {
 
     UART_read(uart7handle, &last_response, sizeof(last_response));
 
+    /*
     if (last_response == addr_response2) {
         //System_printf("2nd response and last response are same!\n");
     } else {
         //System_printf("BEWARE: 2nd response and last response are NOT the same!\n");
     }
-    System_flush();
+    System_flush();*/
 
     // ------------- SETUP CONFIGURATION REGISTERS
     uint8_t config_settings = 0;
