@@ -217,6 +217,8 @@ void read_temp_sensors() {
     // 3. Send register pointer = temperature register
     UART_write(uart7handle, &temp_register_byte, sizeof(temp_register_byte));
 
+    Task_sleep(10);
+
     // Will get back echo of last 3 bytes
     UART_read(uart7handle, &response3, 3);
 

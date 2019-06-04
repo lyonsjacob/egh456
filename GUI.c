@@ -183,7 +183,7 @@ tSliderWidget sliders[] = {
                ClrGray, ClrBlack, ClrSilver, ClrWhite, ClrWhite,
                &g_sFontCm14, "2900 mA", 0, 0, OnSliderChange),
    SliderStruct(tabs, sliders+3, 0,
-               &g_sKentec320x240x16_SSD2119, 170, 140, 130, 30, 0, 40, 30,
+               &g_sKentec320x240x16_SSD2119, 170, 140, 130, 30, 0, 50, 30,
                (SL_STYLE_FILL | SL_STYLE_BACKG_FILL | SL_STYLE_OUTLINE |
                 SL_STYLE_TEXT | SL_STYLE_BACKG_TEXT),
                ClrGray, ClrBlack, ClrSilver, ClrWhite, ClrWhite,
@@ -209,19 +209,19 @@ Canvas(analytics, tabs+1, 0, 0, &g_sKentec320x240x16_SSD2119, 0,
 tCheckBoxWidget set_variables[] =
 {
         CheckBoxStruct(tabs + 1, set_variables + 1, 0, &g_sKentec320x240x16_SSD2119,
-                       10, 30, 60, 20, CB_STYLE_TEXT, 12, 0, ClrLightGreen, ClrLightGreen, &g_sFontCm12,
-                       "Power", 0, turnOnGraphVariable),
+                       2, 30, 80, 20, CB_STYLE_TEXT, 12, 0, ClrLightGreen, ClrLightGreen, &g_sFontCm12,
+                       "Amb Temp", 0, turnOnGraphVariable),
         CheckBoxStruct(tabs + 1, set_variables + 2, 0, &g_sKentec320x240x16_SSD2119,
-                       70, 30, 60, 20, CB_STYLE_TEXT, 12, 0, ClrLightGoldenrodYellow, ClrLightGoldenrodYellow, &g_sFontCm12,
+                       82, 30, 50, 20, CB_STYLE_TEXT, 12, 0, ClrLightGoldenrodYellow, ClrLightGoldenrodYellow, &g_sFontCm12,
                       "Light", 0, turnOnGraphVariable),
         CheckBoxStruct(tabs + 1, set_variables + 3, 0, &g_sKentec320x240x16_SSD2119,
-                       130, 30, 60, 20, CB_STYLE_TEXT, 12, 0, ClrOrange, ClrOrange, &g_sFontCm12,
-                       "Temp", 0, turnOnGraphVariable),
+                       132, 30, 88, 20, CB_STYLE_TEXT, 12, 0, ClrOrange, ClrOrange, &g_sFontCm12,
+                       "Motor Temp", 0, turnOnGraphVariable),
         CheckBoxStruct(tabs + 1, set_variables + 4, 0, &g_sKentec320x240x16_SSD2119,
-                       190, 30, 60, 20, CB_STYLE_TEXT, 12, 0, ClrCyan, ClrCyan, &g_sFontCm12,
+                       220, 30, 50, 20, CB_STYLE_TEXT, 12, 0, ClrCyan, ClrCyan, &g_sFontCm12,
                        "Accel", 0, turnOnGraphVariable),
         CheckBoxStruct(tabs + 1, &analytics, 0, &g_sKentec320x240x16_SSD2119,
-                       250, 30, 60, 20, CB_STYLE_TEXT, 12, 0, ClrSnow, ClrSnow, &g_sFontCm12,
+                       265, 30, 50, 20, CB_STYLE_TEXT, 12, 0, ClrSnow, ClrSnow, &g_sFontCm12,
                       "Speed", 0, turnOnGraphVariable),
 };
 
@@ -293,9 +293,7 @@ void turnOnGraphVariable(tWidget *psWidget, uint32_t bSelected){
     for(ui32Idx = 0; ui32Idx < 5; ui32Idx++){
         if((psWidget == (tWidget *)(set_variables + ui32Idx)) && (variables[ui32Idx].draw == false)){
 
-            if(ui32Idx!=0) variables[ui32Idx].draw = true; //THIS statment draws and doesnt allow power func
-
-            //if(ui32Idx==1) toSet = getPower();
+            if(ui32Idx==0) toSet = get_temp1(1);
             if(ui32Idx==1) toSet = getLux(1);
             if(ui32Idx==2) toSet = get_temp2(1);
             if(ui32Idx==3) toSet = getAcc(1);
@@ -309,6 +307,7 @@ void turnOnGraphVariable(tWidget *psWidget, uint32_t bSelected){
 
             variables[ui32Idx].value[0] = toSet;
             variables[ui32Idx].time = 0;
+            variables[ui32Idx].draw = true;
             break;
         }
 
@@ -492,7 +491,7 @@ void drawAllAnalytics(){
 
         toSet = 0;
 
-        //if(i==1) toSet = getPower();
+        if(i==0) toSet = get_temp1(1);
         if(i==1) toSet = getLux(1);
         if(i==2) toSet = get_temp2(1);
         if(i==3) toSet = getAcc(1);
