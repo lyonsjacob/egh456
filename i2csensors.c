@@ -202,7 +202,7 @@ void readLux()
         exponent = (lux & 0xF000) >> 12;
         luxIndex++;
         convertedLux[luxIndex % 4] = result * (0.01 *  exp2(exponent));
-        if(convertedLux[luxIndex % 4] > 1000){
+        if(convertedLux[luxIndex % 4] > 50){
             convertedLux[luxIndex % 4] = convertedLux[(luxIndex - 1) % 4];
         }
         if(convertedLux[luxIndex % 4] < 5){
@@ -233,11 +233,11 @@ void readAcc()
         int i;
         for(i = 0; i < 6; i+= 2){
             acc = (int16_t)((accRxBuffer[i + 1] << 8) | accRxBuffer[i]);
-            convertedAcc[i/2] = ((acc * 0.061)/500) * 9.8;
+            convertedAcc[i/2] = ((acc * 0.122)/1000) * 9.8;
         }
 
         accIndex++;
-        absAcc[accIndex % 4] = (sqrt(pow(convertedAcc[0],2) + pow(convertedAcc[1],2) + pow(convertedAcc[2],2)));
+        absAcc[accIndex % 4] = abs(convertedAcc[0] + convertedAcc[1] + convertedAcc[2]);//(sqrt(pow(convertedAcc[0],2) + pow(convertedAcc[1],2) + pow(convertedAcc[2],2)));
 
         if(absAcc[accIndex % 4] > setAcc)
         {

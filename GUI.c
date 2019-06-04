@@ -183,11 +183,11 @@ tSliderWidget sliders[] = {
                ClrGray, ClrBlack, ClrSilver, ClrWhite, ClrWhite,
                &g_sFontCm14, "2900 mA", 0, 0, OnSliderChange),
    SliderStruct(tabs, sliders+3, 0,
-               &g_sKentec320x240x16_SSD2119, 170, 140, 130, 30, 0, 50, 30,
+               &g_sKentec320x240x16_SSD2119, 170, 140, 130, 30, 0, 50, 40,
                (SL_STYLE_FILL | SL_STYLE_BACKG_FILL | SL_STYLE_OUTLINE |
                 SL_STYLE_TEXT | SL_STYLE_BACKG_TEXT),
                ClrGray, ClrBlack, ClrSilver, ClrWhite, ClrWhite,
-               &g_sFontCm14, "30 celsius", 0, 0, OnSliderChange),
+               &g_sFontCm14, "40 celsius", 0, 0, OnSliderChange),
     SliderStruct(tabs, &motorControl,0,
                 &g_sKentec320x240x16_SSD2119, 20, 60, 130, 30, 0, 4534, 0,
                 (SL_STYLE_FILL | SL_STYLE_BACKG_FILL | SL_STYLE_OUTLINE |
@@ -204,24 +204,24 @@ tSliderWidget sliders[] = {
 //*****************************************************************************
 
 Canvas(analytics, tabs+1, 0, 0, &g_sKentec320x240x16_SSD2119, 0,
-       30, 320, 160, CANVAS_STYLE_APP_DRAWN, 0, 0, 0, 0, 0, 0, paintGraph);
+       22, 320, 180, CANVAS_STYLE_APP_DRAWN, 0, 0, 0, 0, 0, 0, paintGraph);
 
 tCheckBoxWidget set_variables[] =
 {
         CheckBoxStruct(tabs + 1, set_variables + 1, 0, &g_sKentec320x240x16_SSD2119,
                        2, 22, 80, 20, CB_STYLE_TEXT, 12, 0, ClrLightGreen, ClrLightGreen, &g_sFontCm12,
-                       "Amb Temp", 0, turnOnGraphVariable),
+                       "AmbTemp", 0, turnOnGraphVariable),
         CheckBoxStruct(tabs + 1, set_variables + 2, 0, &g_sKentec320x240x16_SSD2119,
-                       82, 22, 50, 20, CB_STYLE_TEXT, 12, 0, ClrLightGoldenrodYellow, ClrLightGoldenrodYellow, &g_sFontCm12,
+                       80, 22, 50, 20, CB_STYLE_TEXT, 12, 0, ClrLightGoldenrodYellow, ClrLightGoldenrodYellow, &g_sFontCm12,
                       "Light", 0, turnOnGraphVariable),
         CheckBoxStruct(tabs + 1, set_variables + 3, 0, &g_sKentec320x240x16_SSD2119,
-                       132, 22, 88, 20, CB_STYLE_TEXT, 12, 0, ClrOrange, ClrOrange, &g_sFontCm12,
-                       "Motor Temp", 0, turnOnGraphVariable),
+                       130, 22, 88, 20, CB_STYLE_TEXT, 12, 0, ClrOrange, ClrOrange, &g_sFontCm12,
+                       "MotorTemp", 0, turnOnGraphVariable),
         CheckBoxStruct(tabs + 1, set_variables + 4, 0, &g_sKentec320x240x16_SSD2119,
-                       220, 22, 50, 20, CB_STYLE_TEXT, 12, 0, ClrCyan, ClrCyan, &g_sFontCm12,
+                       215, 22, 50, 20, CB_STYLE_TEXT, 12, 0, ClrCyan, ClrCyan, &g_sFontCm12,
                        "Accel", 0, turnOnGraphVariable),
         CheckBoxStruct(tabs + 1, &analytics, 0, &g_sKentec320x240x16_SSD2119,
-                       265, 22, 50, 20, CB_STYLE_TEXT, 12, 0, ClrSnow, ClrSnow, &g_sFontCm12,
+                       261, 22, 50, 20, CB_STYLE_TEXT, 12, 0, ClrSnow, ClrSnow, &g_sFontCm12,
                       "Speed", 0, turnOnGraphVariable),
 };
 
@@ -238,22 +238,22 @@ void paintGraph(tWidget *psWidget, tContext *psContext){
 
     GrContextFontSet(psContext, &g_sFontCm12);
     GrContextForegroundSet(psContext, ClrLightGreen);
-    GrStringDraw(psContext, "(celsius)", -1, 26, 39, 0);
+    GrStringDraw(psContext, "(celsius)", -1, 15, 39, 0);
     GrContextForegroundSet(psContext, ClrLightGoldenrodYellow);
-    GrStringDraw(psContext, "(lux)", -1, 98, 39, 0);
+    GrStringDraw(psContext, "(lux)", -1, 82, 39, 0);
     GrContextForegroundSet(psContext, ClrOrange);
-    GrStringDraw(psContext, "(celsius)", -1, 156, 39, 0);
+    GrStringDraw(psContext, "(celsius)", -1, 136, 39, 0);
     GrContextForegroundSet(psContext, ClrCyan);
-    GrStringDraw(psContext, "(mps^2)", -1, 224, 39, 0);
+    GrStringDraw(psContext, "(mps^2)", -1, 216, 39, 0);
     GrContextForegroundSet(psContext, ClrSnow);
     GrStringDraw(psContext, "(rpm/100)", -1, 269, 39, 0);
-
 
     GrContextForegroundSet(psContext, ClrSilver);
 
     // draw axis // mapping:: 10px = 1 seconds, 10px = 100 value Y axis
     GrLineDraw(psContext, 50, 160, 300, 160);
     GrLineDraw(psContext, 50, 60, 50, 159);
+    GrStringDraw(psContext, "Time (sec)", -1, 240, 176, 0);
 
 
     int x;
@@ -337,6 +337,15 @@ void turnOnGraphVariable(tWidget *psWidget, uint32_t bSelected){
 }
 
 void paintMotorControl(tWidget *psWidget, tContext *psContext){
+
+    //clear lines
+    tRectangle sRect;
+    sRect.i16XMin = 0;
+    sRect.i16YMin = 22;
+    sRect.i16XMax = GrContextDpyWidthGet(psContext) - 1;
+    sRect.i16YMax = 32;
+    GrContextForegroundSet(psContext, ClrBlack);
+    GrRectFill(psContext, &sRect);
 
     GrContextFontSet(psContext, &g_sFontCm16);
     GrContextForegroundSet(psContext, ClrSilver);
@@ -535,7 +544,7 @@ void GUI_init(){
     //
     // Add the first panel to the widget tree.
     //
-    speed = 0; temp = 30; accel = 18;
+    speed = 0; temp = 40; accel = 18;
     disp_tab=0, sec=0, hour=0, min=0;
     WidgetAdd(WIDGET_ROOT, (tWidget *)tabs);
     WidgetAdd(WIDGET_ROOT, (tWidget *)&startButton);

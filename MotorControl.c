@@ -235,13 +235,13 @@ void MotorControlSwi(UArg arg0, UArg arg1)
         Motor_Control.MaxAcceleration = 100;
     }
 
-    if(Motor_Control.currentAccelerationRadss < Motor_Control.MaxAcceleration || Motor_Control.currentAccelerationRadss > - Motor_Control.MaxAcceleration)
+    /*if(Motor_Control.currentAccelerationRadss < Motor_Control.MaxAcceleration || Motor_Control.currentAccelerationRadss > - Motor_Control.MaxAcceleration)
     {
         GPIO_write(Board_LED2, Board_OFF);
     }else
     {
         GPIO_write(Board_LED2, Board_ON);
-    }
+    }*/
 
     PWM_setDuty(Motor_Control.pwm1, Motor_Control.duty);
 }
