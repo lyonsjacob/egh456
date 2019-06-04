@@ -54,9 +54,14 @@
 #include <MotorControl.h>
 #include "GUI.h"
 
-float convertedLux;
+float convertedLux[5];
 float convertedAcc[3];
+float absAcc[5];
 int setAcc;
+float avAcc;
+int accIndex;
+float avLux;
+int luxIndex;
 
 I2C_Handle      i2c;
 I2C_Transaction i2cTransaction;
@@ -78,19 +83,24 @@ uint8_t         accRxBuffer[6];
 
 int getLux(int res)
 {
-    return (int)(res * convertedLux);
+    avLux = (convertedLux[0] + convertedLux[1] + convertedLux[2] + convertedLux[3] + convertedLux[4]) / 5.0;
+    return (int)(avLux);
 }
 
 int getAcc(int res)
 {
-    int absAcc;
-    absAcc = (int)(res * sqrt(pow(convertedAcc[0],2) + pow(convertedAcc[1],2) + pow(convertedAcc[2],2)));
-    return absAcc;
+    avAcc = (absAcc[0] + absAcc[1] + absAcc[2] + absAcc[3] + absAcc[4])/ 5.0;
+    return (int)avAcc;
 }
 
 void initLux()
 {
-    convertedLux = 0;
+    luxIndex = 0;
+    convertedLux[0] = 0;
+    convertedLux[1] = 0;
+    convertedLux[2] = 0;
+    convertedLux[3] = 0;
+    convertedLux[4] = 0;
     luxTxBuffer[0] = LUX_REG_CONFIGURATION;
     luxTxBuffer[1] = 0xC4;
     luxTxBuffer[2] = 0x10;
@@ -110,6 +120,7 @@ void initLux()
 
 void initAcc()
 {
+    accIndex = 0;
     convertedAcc[0] = 0;
     convertedAcc[1] = 0;
     convertedAcc[2] = 0;
@@ -189,11 +200,15 @@ void readLux()
         lux = luxRxBuffer[0] << 8 | luxRxBuffer[1];
         result = lux & 0x0FFF;
         exponent = (lux & 0xF000) >> 12;
-        convertedLux = result * (0.01 * exp2(exponent));
-        if(convertedLux < 1){
+        luxIndex++;
+        convertedLux[luxIndex % 4] = result * (0.01 *  exp2(exponent));
+        if(convertedLux[luxIndex % 4] > 1000){
+            convertedLux[luxIndex % 4] = convertedLux[(luxIndex - 1) % 4];
+        }
+        if(convertedLux[luxIndex % 4] < 5){
             changeDisplayToNight();
         }
-        if(convertedLux > 1){
+        if(convertedLux[luxIndex % 4] > 5){
             changeDisplayToDay();
         }
 
@@ -219,10 +234,14 @@ void readAcc()
         for(i = 0; i < 6; i+= 2){
             acc = (int16_t)((accRxBuffer[i + 1] << 8) | accRxBuffer[i]);
             convertedAcc[i/2] = ((acc * 0.061)/500) * 9.8;
-            if(convertedAcc[i/2] > setAcc)
-            {
-                emergencyStop();
-            }
+        }
+
+        accIndex++;
+        absAcc[accIndex % 4] = (sqrt(pow(convertedAcc[0],2) + pow(convertedAcc[1],2) + pow(convertedAcc[2],2)));
+
+        if(absAcc[accIndex % 4] > setAcc)
+        {
+            emergencyStop();
         }
     }
     /*else {
