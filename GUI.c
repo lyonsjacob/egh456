@@ -171,11 +171,11 @@ Canvas(motorControl, tabs, 0, 0, &g_sKentec320x240x16_SSD2119, 0,
 
 tSliderWidget sliders[] = {
    SliderStruct(tabs, sliders+1, 0,
-               &g_sKentec320x240x16_SSD2119, 170, 60, 130, 30, 0, 20, 10,
+               &g_sKentec320x240x16_SSD2119, 170, 60, 130, 30, 0, 40, 18,
                (SL_STYLE_FILL | SL_STYLE_BACKG_FILL | SL_STYLE_OUTLINE |
                 SL_STYLE_TEXT | SL_STYLE_BACKG_TEXT),
                ClrGray, ClrBlack, ClrSilver, ClrWhite, ClrWhite,
-               &g_sFontCm14, "10 mps2", 0, 0, OnSliderChange),
+               &g_sFontCm14, "18 mps2", 0, 0, OnSliderChange),
    SliderStruct(tabs, sliders+2, 0,
                &g_sKentec320x240x16_SSD2119, 20, 140, 130, 30, 2800, 3001, 2900,
                (SL_STYLE_FILL | SL_STYLE_BACKG_FILL | SL_STYLE_OUTLINE |
@@ -518,7 +518,7 @@ void GUI_init(){
     //
     // Add the first panel to the widget tree.
     //
-    speed = 0; temp = 30; accel = 10;
+    speed = 0; temp = 30; accel = 18;
     disp_tab=0, sec=0, hour=0, min=0;
     WidgetAdd(WIDGET_ROOT, (tWidget *)tabs);
     WidgetAdd(WIDGET_ROOT, (tWidget *)&startButton);
