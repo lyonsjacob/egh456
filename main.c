@@ -226,15 +226,6 @@ void setupI2C2( void )
     //}
 }
 
-void setupMutexPri()
-{
-    GateMutexPri_Params_init(&gampParams);
-    gampHandle = GateMutexPri_create(&gampParams, NULL);
-    if (gampHandle == NULL) {
-        System_abort("Gate Mutex Pri create failed");
-    }
-}
-
 int main(void)
 {
     /* Call board init functions */
@@ -252,7 +243,6 @@ int main(void)
     g_ui32SysClock = SysCtlClockFreqSet((SYSCTL_XTAL_25MHZ | SYSCTL_OSC_MAIN
                    | SYSCTL_USE_PLL |SYSCTL_CFG_VCO_480), 120000000);
 
-    setupMutexPri();
 
     setupI2C2();
 

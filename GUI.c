@@ -177,11 +177,11 @@ tSliderWidget sliders[] = {
                ClrGray, ClrBlack, ClrSilver, ClrWhite, ClrWhite,
                &g_sFontCm14, "10 mps2", 0, 0, OnSliderChange),
    SliderStruct(tabs, sliders+2, 0,
-               &g_sKentec320x240x16_SSD2119, 20, 140, 130, 30, 2800, 3001, 0,
+               &g_sKentec320x240x16_SSD2119, 20, 140, 130, 30, 2800, 3001, 2900,
                (SL_STYLE_FILL | SL_STYLE_BACKG_FILL | SL_STYLE_OUTLINE |
                 SL_STYLE_TEXT | SL_STYLE_BACKG_TEXT),
                ClrGray, ClrBlack, ClrSilver, ClrWhite, ClrWhite,
-               &g_sFontCm14, "0 mA", 0, 0, OnSliderChange),
+               &g_sFontCm14, "2900 mA", 0, 0, OnSliderChange),
    SliderStruct(tabs, sliders+3, 0,
                &g_sKentec320x240x16_SSD2119, 170, 140, 130, 30, 0, 40, 30,
                (SL_STYLE_FILL | SL_STYLE_BACKG_FILL | SL_STYLE_OUTLINE |
@@ -189,11 +189,11 @@ tSliderWidget sliders[] = {
                ClrGray, ClrBlack, ClrSilver, ClrWhite, ClrWhite,
                &g_sFontCm14, "30 celsius", 0, 0, OnSliderChange),
     SliderStruct(tabs, &motorControl,0,
-                &g_sKentec320x240x16_SSD2119, 20, 60, 130, 30, 0, 4534, 1000,
+                &g_sKentec320x240x16_SSD2119, 20, 60, 130, 30, 0, 4534, 0,
                 (SL_STYLE_FILL | SL_STYLE_BACKG_FILL | SL_STYLE_OUTLINE |
                  SL_STYLE_TEXT | SL_STYLE_BACKG_TEXT),
                 ClrGray, ClrBlack, ClrSilver, ClrWhite, ClrWhite,
-                &g_sFontCm14, "1000 rpm", 0, 0, OnSliderChange),
+                &g_sFontCm14, "0 rpm", 0, 0, OnSliderChange),
 };
 
 
@@ -519,7 +519,7 @@ void GUI_init(){
     //
     // Add the first panel to the widget tree.
     //
-    speed = 1000; temp = 30; acc = 10;
+    speed = 0; temp = 30; acc = 10;
     disp_tab=0, sec=0, hour=0, min=0;
     WidgetAdd(WIDGET_ROOT, (tWidget *)tabs);
     WidgetAdd(WIDGET_ROOT, (tWidget *)&startButton);
