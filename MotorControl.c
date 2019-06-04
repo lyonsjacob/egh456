@@ -190,7 +190,7 @@ void MotorControlSwi(UArg arg0, UArg arg1)
     /*set duty cycle in emergency stop scenario*/
     if (Motor_Control.emergencyStop)
     {
-        Motor_Control.duty = (int)(Motor_Control.duty+Motor_Control.error*0.0053);
+        Motor_Control.duty = (int)(Motor_Control.duty+Motor_Control.error*0.0052);
         /*Integral control*/
         Motor_Control.duty = (int)(Motor_Control.duty-0.05*integral);
         /*derivative control*/
