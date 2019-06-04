@@ -40,6 +40,7 @@ struct motor_control
     uint32_t    interruptCount;
     uint32_t    MaxAcceleration;
     int32_t     currentAccelerationRadss;
+    int8_t      hall;
 };
 
 struct motor_control Motor_Control;
@@ -223,7 +224,7 @@ void MotorControlSwi(UArg arg0, UArg arg1)
     }
 
     /*reset duty cycle if motor is stationary*/
-    if(Motor_Control.duty < 4 && !Motor_Control.requiredRPM)
+    if(Motor_Control.currentRPM < 300 && !Motor_Control.requiredRPM)
     {
         Motor_Control.duty = 0;
     }
