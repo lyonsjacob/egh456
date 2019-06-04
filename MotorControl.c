@@ -199,9 +199,9 @@ void MotorControlSwi(UArg arg0, UArg arg1)
     /*set duty cycle in not emergency stop scenario*/
     }else
     {
-        Motor_Control.duty = (double)(Motor_Control.duty+Motor_Control.error*+0.0053);
+        Motor_Control.duty = (double)(Motor_Control.duty+Motor_Control.error*+0.0056);
         /*Integral control*/
-        Motor_Control.duty = (double)(Motor_Control.duty-0.05*integral);
+        Motor_Control.duty = (double)(Motor_Control.duty-0.045*integral);
         /*derivative control*/
         Motor_Control.duty = (double)(Motor_Control.duty-0.09*derivative);
 
@@ -230,6 +230,7 @@ void MotorControlSwi(UArg arg0, UArg arg1)
     if((Motor_Control.emergencyStop)&&(!Motor_Control.currentRPM))
     {
         Motor_Control.emergencyStop = 0;
+        Motor_Control.MaxAcceleration = 200;
     }
 
     if(Motor_Control.currentAccelerationRadss < Motor_Control.MaxAcceleration || Motor_Control.currentAccelerationRadss > -Motor_Control.MaxAcceleration)
@@ -269,7 +270,7 @@ void initializeMotorStructValues(void)
     Motor_Control.currentRPM      = 0;
     Motor_Control.lastRPM         = 0;
     Motor_Control.requiredRPM     = 0;
-    Motor_Control.MaxAcceleration = 100;
+    Motor_Control.MaxAcceleration = 200;
     Motor_Control.emergencyStop   = 0;
     Motor_Control.prevError       = 0;
     Motor_Control.error           = 0;
