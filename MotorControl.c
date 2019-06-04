@@ -38,9 +38,8 @@ struct motor_control
     int32_t     currentRPM, lastRPM, requiredRPM;
     int32_t     error, prevError;
     uint32_t    interruptCount;
-    uint32_t    MaxAcceleration;
-    int32_t     currentAccelerationRadss;
-    int8_t      hall;
+    //uint32_t    MaxAcceleration; DEBUG
+    //int32_t     currentAccelerationRadss; DEBUG
 };
 
 struct motor_control Motor_Control;
@@ -69,7 +68,7 @@ int32_t getRPM(void)
 /*Puts motor controller in emergency stop state*/
 void emergencyStop(void)
 {
-    Motor_Control.MaxAcceleration = 200;
+    //Motor_Control.MaxAcceleration = 200;DEBUG
     Motor_Control.requiredRPM     = 0;
     Motor_Control.emergencyStop   = 1;
 }
@@ -175,7 +174,7 @@ void StartMotor(void)
 
 void MotorControlSwi(UArg arg0, UArg arg1)
 {
-    Motor_Control.currentAccelerationRadss = ((Motor_Control.lastRPM -Motor_Control.currentRPM)*0.10472)*10;
+    //Motor_Control.currentAccelerationRadss = ((Motor_Control.lastRPM -Motor_Control.currentRPM)*0.10472)*10; DEBUG
 
     /*Kick start motor*/
     if(!Motor_Control.currentRPM && Motor_Control.requiredRPM)
@@ -233,9 +232,10 @@ void MotorControlSwi(UArg arg0, UArg arg1)
     if((Motor_Control.emergencyStop)&&(!Motor_Control.currentRPM))
     {
         Motor_Control.emergencyStop = 0;
-        Motor_Control.MaxAcceleration = 100;
+        //Motor_Control.MaxAcceleration = 100; DEBUG
     }
 
+     //// DEBUG ////
     /*if(Motor_Control.currentAccelerationRadss < Motor_Control.MaxAcceleration || Motor_Control.currentAccelerationRadss > - Motor_Control.MaxAcceleration)
     {
         GPIO_write(Board_LED2, Board_OFF);
@@ -273,7 +273,7 @@ void initializeMotorStructValues(void)
     Motor_Control.currentRPM      = 0;
     Motor_Control.lastRPM         = 0;
     Motor_Control.requiredRPM     = 0;
-    Motor_Control.MaxAcceleration = 100;
+    //Motor_Control.MaxAcceleration = 100; DEBUG
     Motor_Control.emergencyStop   = 0;
     Motor_Control.prevError       = 0;
     Motor_Control.error           = 0;
