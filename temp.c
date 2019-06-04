@@ -25,6 +25,10 @@
 #include <ti/sysbios/knl/Semaphore.h>
 #include <ti/sysbios/knl/Mailbox.h>
 
+// Motor
+#include "MotorControl.h"
+#include "GUI.h"
+
 // UART stuff
 UART_Handle      uart0handle;
 UART_Params      uart0params;
@@ -249,6 +253,7 @@ Void calculate_average() {
     // Read temperatures
     float temp1 = 0;
     float temp2 = 0;
+    int emergency_temp;
     UInt readings_count = 0;
 
     // Mailbox and event
@@ -276,6 +281,12 @@ Void calculate_average() {
             temp2_avg = temp2 / MAXREADINGSAVG;
             //System_printf("Sensor 2: %fºC \t Sensor 1: %fºC\n", temp2_avg, temp1_avg);
             //System_flush();
+
+            // Check emergency
+            emergency_temp = getUserSetTemperature();
+            if (temp1_avg >= emergency_temp || temp2_avg >= emergency_temp) {
+                emergencyStop();
+            }
 
             // Reset
             readings_count = 0;
