@@ -190,20 +190,22 @@ void MotorControlSwi(UArg arg0, UArg arg1)
     /*set duty cycle in emergency stop scenario*/
     if (Motor_Control.emergencyStop)
     {
-        Motor_Control.duty = (int)(Motor_Control.duty+Motor_Control.error*0.0052);
+        ////////////////////////////////////////////////////////////////////////////
+        Motor_Control.duty = (int)(Motor_Control.duty+Motor_Control.error*0.0054);
         /*Integral control*/
-        Motor_Control.duty = (int)(Motor_Control.duty-0.05*integral);
+        Motor_Control.duty = (int)(Motor_Control.duty-0.045*integral);
         /*derivative control*/
         Motor_Control.duty = (double)(Motor_Control.duty-0.09*derivative);
+        ///////////////////////////////////////////////////////////////////////////
 
     /*set duty cycle in not emergency stop scenario*/
     }else
     {
-        Motor_Control.duty = (double)(Motor_Control.duty+Motor_Control.error*+0.0056);
+        Motor_Control.duty = (double)(Motor_Control.duty+Motor_Control.error*+0.0049);
         /*Integral control*/
-        Motor_Control.duty = (double)(Motor_Control.duty-0.045*integral);
+        Motor_Control.duty = (double)(Motor_Control.duty-0.044*integral);
         /*derivative control*/
-        Motor_Control.duty = (double)(Motor_Control.duty-0.09*derivative);
+        Motor_Control.duty = (double)(Motor_Control.duty-0.1*derivative);
 
 
     }
@@ -230,10 +232,10 @@ void MotorControlSwi(UArg arg0, UArg arg1)
     if((Motor_Control.emergencyStop)&&(!Motor_Control.currentRPM))
     {
         Motor_Control.emergencyStop = 0;
-        Motor_Control.MaxAcceleration = 200;
+        Motor_Control.MaxAcceleration = 100;
     }
 
-    if(Motor_Control.currentAccelerationRadss < Motor_Control.MaxAcceleration || Motor_Control.currentAccelerationRadss > -Motor_Control.MaxAcceleration)
+    if(Motor_Control.currentAccelerationRadss < Motor_Control.MaxAcceleration || Motor_Control.currentAccelerationRadss > - Motor_Control.MaxAcceleration)
     {
         GPIO_write(Board_LED2, Board_OFF);
     }else
@@ -270,7 +272,7 @@ void initializeMotorStructValues(void)
     Motor_Control.currentRPM      = 0;
     Motor_Control.lastRPM         = 0;
     Motor_Control.requiredRPM     = 0;
-    Motor_Control.MaxAcceleration = 200;
+    Motor_Control.MaxAcceleration = 100;
     Motor_Control.emergencyStop   = 0;
     Motor_Control.prevError       = 0;
     Motor_Control.error           = 0;
