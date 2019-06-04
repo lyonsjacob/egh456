@@ -238,13 +238,13 @@ void readAcc()
 
         accIndex++;
         absAcc[accIndex % 4] = (sqrt(pow(convertedAcc[0],2) + pow(convertedAcc[1],2) + pow(convertedAcc[2],2)));
-
-        if(absAcc[accIndex % 4] > setAcc)
-        {
-//            System_printf("Emergency stop triggered\n");
-//            System_flush();
-            emergencyStop();
-        }
+//
+//        if(absAcc[accIndex % 4] > setAcc)
+//        {
+////            System_printf("Emergency stop triggered\n");
+////            System_flush();
+//            emergencyStop();
+//        }
     }
     /*else {
         System_printf("I2C Bus fault\n");
