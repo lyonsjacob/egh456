@@ -30,7 +30,7 @@ struct Analytic {
     bool draw;
 };
 
-uint16_t speed,current,acc,temp;    // user set vars
+uint32_t speed,current,accel,temp;    // user set vars
 uint32_t sec,min,hour;              // timer vars
 uint32_t disp_tab;                  // which tab
 bool motorOn = false;
@@ -339,8 +339,8 @@ void OnSliderChange(tWidget *psWidget, int32_t i32Value){
 
     //Accelerometer changed
     if(psWidget == (tWidget *)&sliders[0]){
-        acc = i32Value; // 1 mps^2? [0 -> 100]
-        usprintf(pcSliderText, "%d mps2", acc);
+        accel = i32Value; // 1 mps^2? [0 -> 100]
+        usprintf(pcSliderText, "%d mps2", accel);
         SliderTextSet(&sliders[0], pcSliderText);
         WidgetPaint((tWidget *)&sliders[0]);
     }
@@ -519,7 +519,7 @@ void GUI_init(){
     //
     // Add the first panel to the widget tree.
     //
-    speed = 0; temp = 30; acc = 10;
+    speed = 0; temp = 30; accel = 10;
     disp_tab=0, sec=0, hour=0, min=0;
     WidgetAdd(WIDGET_ROOT, (tWidget *)tabs);
     WidgetAdd(WIDGET_ROOT, (tWidget *)&startButton);
@@ -541,7 +541,7 @@ void GUI_init(){
 }
 
 //get set variables
-int getUserSetAccelerometer()   {   return  acc;        }
+int getUserSetAccelerometer()   {   return  accel;        }
 int getUserSetCurrent()         {   return  current;    }
 int getUserSetTemperature()     {   return  temp;       }
 
