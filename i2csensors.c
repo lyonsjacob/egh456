@@ -120,27 +120,17 @@ void initLux()
 
 void initAcc()
 {
+
     accIndex = 0;
     convertedAcc[0] = 0;
     convertedAcc[1] = 0;
     convertedAcc[2] = 0;
+
     accTxBuffer[0] = 0x7E; //Power mode set register
+//    accRxBuffer[0] = 0b00010001; //Normal power mode
+    accTxBuffer[1] = 0b00010001; //Normal power mode
+
     i2cTransaction.slaveAddress = Board_BMI160_ADDR;
-    i2cTransaction.writeBuf = accTxBuffer;
-    i2cTransaction.writeCount = 1;
-    i2cTransaction.readBuf = accRxBuffer;
-    i2cTransaction.readCount = 1;
-
-    if (!I2C_transfer(i2c, &i2cTransaction)) {
-        System_abort("Error Reading Accelorometer Power Mode\n");
-    }
-    /*else {
-        System_printf("Accelerometer Power Mode Read!\n");
-    }*/
-
-    accRxBuffer[0] = 0b00010001; //Normal power mode
-    accTxBuffer[1] = accRxBuffer[0];
-
     i2cTransaction.writeBuf = accTxBuffer;
     i2cTransaction.writeCount = 2;
     i2cTransaction.readBuf = NULL;
@@ -153,23 +143,11 @@ void initAcc()
         System_printf("Accelerometer Power Mode Changed!\n");
     }*/
 
+
     accTxBuffer[0] = 0x41; //Power mode set register
+//    accRxBuffer[0] = 0b00000101; //Normal power mode
+    accTxBuffer[1] = 0b00000101; //Normal power mode
     i2cTransaction.slaveAddress = Board_BMI160_ADDR;
-    i2cTransaction.writeBuf = accTxBuffer;
-    i2cTransaction.writeCount = 1;
-    i2cTransaction.readBuf = accRxBuffer;
-    i2cTransaction.readCount = 1;
-
-    if (!I2C_transfer(i2c, &i2cTransaction)) {
-        System_abort("Error Reading Accelorometer Range\n");
-    }
-    /*else {
-        System_printf("Accelerometer Range Read!\n");
-    }*/
-
-    accRxBuffer[0] = 0b00000101; //Normal power mode
-    accTxBuffer[1] = accRxBuffer[0];
-
     i2cTransaction.writeBuf = accTxBuffer;
     i2cTransaction.writeCount = 2;
     i2cTransaction.readBuf = NULL;
