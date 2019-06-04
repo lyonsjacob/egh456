@@ -241,6 +241,8 @@ void readAcc()
 
         if(absAcc[accIndex % 4] > setAcc)
         {
+//            System_printf("Emergency stop triggered\n");
+//            System_flush();
             emergencyStop();
         }
     }
